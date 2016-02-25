@@ -36,6 +36,9 @@ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DATANODE_OOB_TIMEOUT_DEFA
 import org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.PipelineAckProto;
 import org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.Status;
 import com.google.protobuf.TextFormat;
+
+import edu.brown.cs.systems.baggage.Baggage;
+
 import org.apache.hadoop.hdfs.util.LongBitFormat;
 
 /** Pipeline Acknowledgment **/
@@ -141,6 +144,7 @@ public class PipelineAck {
       .addAllReply(statusList)
       .addAllFlag(flagList)
       .setDownstreamAckTimeNanos(downstreamAckTimeNanos)
+      .setBaggage(Baggage.fork().toByteString())
       .build();
   }
   
@@ -246,6 +250,11 @@ public class PipelineAck {
 
   public void write(OutputStream out) throws IOException {
     proto.writeDelimitedTo(out);
+  }
+  
+  public void joinBaggage() {
+    if (proto != null)
+      Baggage.join(proto.getBaggage());
   }
   
   @Override //Object

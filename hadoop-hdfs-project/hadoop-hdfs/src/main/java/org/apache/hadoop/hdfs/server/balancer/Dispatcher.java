@@ -80,6 +80,8 @@ import org.apache.hadoop.util.Time;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
+import edu.brown.cs.systems.baggage.Baggage;
+
 /** Dispatching block replica moves between datanodes. */
 @InterfaceAudience.Private
 public class Dispatcher {
@@ -356,9 +358,11 @@ public class Dispatcher {
     private void receiveResponse(DataInputStream in) throws IOException {
       BlockOpResponseProto response =
           BlockOpResponseProto.parseFrom(vintPrefixed(in));
+      Baggage.join(response.getBaggage());
       while (response.getStatus() == Status.IN_PROGRESS) {
         // read intermediate responses
         response = BlockOpResponseProto.parseFrom(vintPrefixed(in));
+        Baggage.join(response.getBaggage());
       }
       String logInfo = "block move is failed";
       DataTransferProtoUtil.checkBlockOpStatus(response, logInfo);

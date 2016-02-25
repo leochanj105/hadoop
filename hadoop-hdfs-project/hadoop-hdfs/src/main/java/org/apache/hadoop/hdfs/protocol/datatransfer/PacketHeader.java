@@ -32,6 +32,8 @@ import com.google.common.primitives.Shorts;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import edu.brown.cs.systems.baggage.Baggage;
+
 /**
  * Header data for each packet that goes through the read/write pipelines.
  * Includes all of the information about the packet, excluding checksums and
@@ -58,7 +60,7 @@ public class PacketHeader {
       .setLastPacketInBlock(false)
       .setDataLen(0)
       .setSyncBlock(false)
-      .build().getSerializedSize();
+      .build().getSerializedSize() + 1024; // Baggage: hack to include baggage in packet header
   public static final int PKT_LENGTHS_LEN =
       Ints.BYTES + Shorts.BYTES;
   public static final int PKT_MAX_HEADER_LEN =
@@ -81,6 +83,7 @@ public class PacketHeader {
       .setOffsetInBlock(offsetInBlock)
       .setSeqno(seqno)
       .setLastPacketInBlock(lastPacketInBlock)
+      .setBaggage(Baggage.fork().toByteString())
       .setDataLen(dataLen);
       
     if (syncBlock) {
@@ -145,6 +148,15 @@ public class PacketHeader {
     byte[] data = new byte[protoLen];
     in.readFully(data);
     proto = PacketHeaderProto.parseFrom(data);
+  }
+  
+  public boolean hasBaggage() {
+    return proto != null && proto.hasBaggage();
+  }
+  
+  public void joinBaggage() {
+    if (proto != null)
+      Baggage.join(proto.getBaggage());
   }
 
   /**

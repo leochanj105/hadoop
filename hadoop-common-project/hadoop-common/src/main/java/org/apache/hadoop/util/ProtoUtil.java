@@ -32,6 +32,8 @@ import org.apache.htrace.Trace;
 
 import com.google.protobuf.ByteString;
 
+import edu.brown.cs.systems.baggage.Baggage;
+
 public abstract class ProtoUtil {
 
   /**
@@ -175,6 +177,9 @@ public abstract class ProtoUtil {
           .setParentId(s.getSpanId())
           .setTraceId(s.getTraceId()).build());
     }
+    
+    /* Baggage: fork the current baggage */
+    result.setBaggage(Baggage.fork().toByteString());
 
     return result.build();
   }

@@ -118,6 +118,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.retro.backgroundtasks.HDFSBackgroundTask;
+
 /**************************************************
  * FSDataset manages a set of data blocks.  Each block
  * has a unique name and an extent on disk.
@@ -1806,6 +1809,10 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
   public void invalidate(String bpid, Block invalidBlks[]) throws IOException {
     final List<String> errors = new ArrayList<String>();
     for (int i = 0; i < invalidBlks.length; i++) {
+      /* Retro: Start invalidation background task */
+      HDFSBackgroundTask.INVALIDATE.start();
+      final long begin = System.nanoTime();
+      
       final File f;
       final FsVolumeImpl v;
       synchronized (this) {
@@ -1869,11 +1876,14 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
         asyncDiskService.deleteAsync(v.obtainReference(), f,
             FsDatasetUtil.getMetaFile(f, invalidBlks[i].getGenerationStamp()),
             new ExtendedBlock(bpid, invalidBlks[i]),
-            dataStorage.getTrashDirectoryForBlockFile(bpid, f));
+            dataStorage.getTrashDirectoryForBlockFile(bpid, f), begin);
       } catch (ClosedChannelException e) {
         LOG.warn("Volume " + v + " is closed, ignore the deletion task for " +
             "block " + invalidBlks[i]);
       }
+      
+      /* Retro: the invalidate task continues in another thread. Discard baggage now */
+      Baggage.discard();
     }
     if (!errors.isEmpty()) {
       StringBuilder b = new StringBuilder("Failed to delete ")

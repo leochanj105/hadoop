@@ -297,6 +297,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
+import edu.brown.cs.systems.pubsub.PubSub;
+import edu.brown.cs.systems.pubsub.PubSubClient.Subscriber;
+import edu.brown.cs.systems.pubsub.PubSubProtos.StringMessage;
+
 /***************************************************
  * FSNamesystem does the actual bookkeeping work for the
  * DataNode.
@@ -4542,6 +4546,60 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     return Storage.getRegistrationID(getFSImage().getStorage());
   }
 
+  /* Retro: hacky way to throttle replication to specific bytes per second. FIXME */
+  static class RetroReplication {
+    static final String replication_topic = "replication";
+    static final int replication_command_timeout = 30000; // 30s timeout for replication commands
+    
+    private static final ReplicationSubscriber replication_subscriber = new ReplicationSubscriber();
+    
+    static volatile long timeout_at = 0;
+    static volatile long replication_bps = 0;
+    
+    public static void setReplicationTotalBytesPerSecond(long bytes) {
+      String command = "set:"+bytes;
+      PubSub.publish(replication_topic, StringMessage.newBuilder().setMessage(command).build());
+    }
+    
+    public static void clearReplication() {
+      String command = "clear";
+      PubSub.publish(replication_topic, StringMessage.newBuilder().setMessage(command).build());
+    }
+    
+    private static class ReplicationSubscriber extends Subscriber<StringMessage> {
+      
+      public ReplicationSubscriber() {
+        PubSub.subscribe(replication_topic, this);
+      }
+  
+      @Override
+      protected void OnMessage(StringMessage msg) {
+        if (msg.hasMessage()) {
+          String command = msg.getMessage();
+          System.out.println("Replication command received: " + command);
+          try {
+            parseCommand(command);
+          } catch (Exception e) {
+            System.out.println(e.getClass().getName() + " parsing replication command " + msg.getMessage());
+          }
+        }
+      }
+      
+      private void parseCommand(String command) {
+        String[] splits = command.split(":");
+        String cmd = splits[0];
+        if (cmd.equals("set")) {
+          replication_bps = Long.parseLong(splits[1]);
+          timeout_at = System.currentTimeMillis() + replication_command_timeout;
+        } else if (cmd.equals("clear")) {
+          timeout_at = 0;
+          replication_bps = 0;
+        }
+      }
+      
+    }
+  }
+
   /**
    * The given node has reported in.  This method should:
    * 1) Record the heartbeat, so the datanode isn't timed out
@@ -4562,9 +4620,15 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       //get datanode commands
       final int maxTransfer = blockManager.getMaxReplicationStreams()
           - xmitsInProgress;
+      
+      /* Retro: if configured, throttle bytes */
+      long numLiveNodes = blockManager.getDatanodeManager().getNumLiveDataNodes();
+      boolean timedOut = System.currentTimeMillis() > RetroReplication.timeout_at;
+      long maxBytes = (timedOut || numLiveNodes == 0) ? Long.MAX_VALUE : RetroReplication.replication_bps / numLiveNodes;
+      
       DatanodeCommand[] cmds = blockManager.getDatanodeManager().handleHeartbeat(
           nodeReg, reports, blockPoolId, cacheCapacity, cacheUsed,
-          xceiverCount, maxTransfer, failedVolumes, volumeFailureSummary);
+          xceiverCount, maxTransfer, maxBytes, failedVolumes, volumeFailureSummary);
       
       //create ha status
       final NNHAStatusHeartbeat haState = new NNHAStatusHeartbeat(

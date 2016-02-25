@@ -62,11 +62,20 @@ import org.apache.hadoop.util.Time;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.baggage.DetachedBaggage;
+import edu.brown.cs.systems.retro.throttling.LocalThrottlingPoints;
+import edu.brown.cs.systems.retro.throttling.ThrottlingPoint;
+
 /** A class that receives a block and writes to its own disk, meanwhile
  * may copies it to another site. If a throttler is provided,
  * streaming throttling is also supported.
  **/
 class BlockReceiver implements Closeable {
+  
+  /* Retro: BlockReceiver throttling point */
+  public static final ThrottlingPoint throttlingpoint = LocalThrottlingPoints.getThrottlingPoint("BlockReceiver");
+  
   public static final Log LOG = DataNode.LOG;
   static final Log ClientTraceLog = DataNode.ClientTraceLog;
 
@@ -801,6 +810,9 @@ class BlockReceiver implements Closeable {
       throttler.throttle(len);
     }
     
+    /* Retro throttle */
+    throttlingpoint.throttle();
+    
     return lastPacketInBlock?-1:len;
   }
 
@@ -1281,6 +1293,10 @@ class BlockReceiver implements Closeable {
             if (type != PacketResponderType.LAST_IN_PIPELINE && !mirrorError) {
               // read an ack from downstream datanode
               ack.readFields(downstreamIn);
+              
+              /* Baggage: join baggage from ack */
+              ack.joinBaggage();
+              
               ackRecvNanoTime = System.nanoTime();
               if (LOG.isDebugEnabled()) {
                 LOG.debug(myString + " got " + ack);
@@ -1303,6 +1319,7 @@ class BlockReceiver implements Closeable {
                 break;
               }
               expected = pkt.seqno;
+              Baggage.join(pkt.baggage);
               if (type == PacketResponderType.HAS_DOWNSTREAM_IN_PIPELINE
                   && seqno != expected) {
                 throw new IOException(myString + "seqno: expected=" + expected
@@ -1569,6 +1586,7 @@ class BlockReceiver implements Closeable {
     final long offsetInBlock;
     final long ackEnqueueNanoTime;
     final Status ackStatus;
+    final DetachedBaggage baggage = Baggage.fork(); // Fork the baggage when the packet is created
 
     Packet(long seqno, boolean lastPacketInBlock, long offsetInBlock,
         long ackEnqueueNanoTime, Status ackStatus) {

@@ -23,10 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.LinkedListMultimap;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -36,6 +32,12 @@ import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.util.Daemon;
 import org.apache.hadoop.util.Time;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.LinkedListMultimap;
+
+import edu.brown.cs.systems.tracing.aspects.Annotations.BaggageInheritanceDisabled;
 
 /**
  * A cache of input stream sockets to Data Node.
@@ -110,6 +112,25 @@ public class PeerCache {
   private boolean isDaemonStarted() {
     return (daemon == null)? false: true;
   }
+  
+  @BaggageInheritanceDisabled /* Separate expiry daemon into class and disable baggage inheritance */
+  private class ExpiryDaemon implements Runnable {
+    @Override
+    public void run() {
+      try {
+        PeerCache.this.run();
+      } catch(InterruptedException e) {
+        //noop
+      } finally {
+        PeerCache.this.clear();
+      }
+    }
+
+    @Override
+    public String toString() {
+      return String.valueOf(PeerCache.this);
+    }
+  }
 
   private synchronized void startExpiryDaemon() {
     // start daemon only if not already started
@@ -117,23 +138,7 @@ public class PeerCache {
       return;
     }
     
-    daemon = new Daemon(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          PeerCache.this.run();
-        } catch(InterruptedException e) {
-          //noop
-        } finally {
-          PeerCache.this.clear();
-        }
-      }
-
-      @Override
-      public String toString() {
-        return String.valueOf(PeerCache.this);
-      }
-    });
+    daemon = new Daemon(new ExpiryDaemon());
     daemon.start();
   }
 

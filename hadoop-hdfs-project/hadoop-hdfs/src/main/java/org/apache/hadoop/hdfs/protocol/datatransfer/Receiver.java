@@ -42,6 +42,8 @@ import org.apache.hadoop.hdfs.server.datanode.CachingStrategy;
 import org.apache.hadoop.hdfs.shortcircuit.ShortCircuitShm.SlotId;
 import org.apache.htrace.TraceScope;
 
+import edu.brown.cs.systems.baggage.Baggage;
+
 /** Receiver */
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
@@ -110,6 +112,7 @@ public abstract class Receiver implements DataTransferProtocol {
   /** Receive OP_READ_BLOCK */
   private void opReadBlock() throws IOException {
     OpReadBlockProto proto = OpReadBlockProto.parseFrom(vintPrefixed(in));
+    Baggage.join(proto.getHeader().getBaseHeader().getBaggage());
     TraceScope traceScope = continueTraceSpan(proto.getHeader(),
         proto.getClass().getSimpleName());
     try {
@@ -130,6 +133,7 @@ public abstract class Receiver implements DataTransferProtocol {
   /** Receive OP_WRITE_BLOCK */
   private void opWriteBlock(DataInputStream in) throws IOException {
     final OpWriteBlockProto proto = OpWriteBlockProto.parseFrom(vintPrefixed(in));
+    Baggage.join(proto.getHeader().getBaseHeader().getBaggage());
     final DatanodeInfo[] targets = PBHelper.convert(proto.getTargetsList());
     TraceScope traceScope = continueTraceSpan(proto.getHeader(),
         proto.getClass().getSimpleName());
@@ -161,6 +165,7 @@ public abstract class Receiver implements DataTransferProtocol {
   private void opTransferBlock(DataInputStream in) throws IOException {
     final OpTransferBlockProto proto =
       OpTransferBlockProto.parseFrom(vintPrefixed(in));
+    Baggage.join(proto.getHeader().getBaseHeader().getBaggage());
     final DatanodeInfo[] targets = PBHelper.convert(proto.getTargetsList());
     TraceScope traceScope = continueTraceSpan(proto.getHeader(),
         proto.getClass().getSimpleName());
@@ -179,6 +184,7 @@ public abstract class Receiver implements DataTransferProtocol {
   private void opRequestShortCircuitFds(DataInputStream in) throws IOException {
     final OpRequestShortCircuitAccessProto proto =
       OpRequestShortCircuitAccessProto.parseFrom(vintPrefixed(in));
+    Baggage.join(proto.getHeader().getBaggage());
     SlotId slotId = (proto.hasSlotId()) ? 
         PBHelper.convert(proto.getSlotId()) : null;
     TraceScope traceScope = continueTraceSpan(proto.getHeader(),
@@ -198,6 +204,7 @@ public abstract class Receiver implements DataTransferProtocol {
       throws IOException {
     final ReleaseShortCircuitAccessRequestProto proto =
       ReleaseShortCircuitAccessRequestProto.parseFrom(vintPrefixed(in));
+    Baggage.join(proto.getBaggage());
     TraceScope traceScope = continueTraceSpan(proto.getTraceInfo(),
         proto.getClass().getSimpleName());
     try {
@@ -211,6 +218,7 @@ public abstract class Receiver implements DataTransferProtocol {
   private void opRequestShortCircuitShm(DataInputStream in) throws IOException {
     final ShortCircuitShmRequestProto proto =
         ShortCircuitShmRequestProto.parseFrom(vintPrefixed(in));
+    Baggage.join(proto.getBaggage());
     TraceScope traceScope = continueTraceSpan(proto.getTraceInfo(),
         proto.getClass().getSimpleName());
     try {
@@ -223,6 +231,7 @@ public abstract class Receiver implements DataTransferProtocol {
   /** Receive OP_REPLACE_BLOCK */
   private void opReplaceBlock(DataInputStream in) throws IOException {
     OpReplaceBlockProto proto = OpReplaceBlockProto.parseFrom(vintPrefixed(in));
+    Baggage.join(proto.getHeader().getBaggage());
     TraceScope traceScope = continueTraceSpan(proto.getHeader(),
         proto.getClass().getSimpleName());
     try {
@@ -239,6 +248,7 @@ public abstract class Receiver implements DataTransferProtocol {
   /** Receive OP_COPY_BLOCK */
   private void opCopyBlock(DataInputStream in) throws IOException {
     OpCopyBlockProto proto = OpCopyBlockProto.parseFrom(vintPrefixed(in));
+    Baggage.join(proto.getHeader().getBaggage());
     TraceScope traceScope = continueTraceSpan(proto.getHeader(),
         proto.getClass().getSimpleName());
     try {
@@ -252,6 +262,7 @@ public abstract class Receiver implements DataTransferProtocol {
   /** Receive OP_BLOCK_CHECKSUM */
   private void opBlockChecksum(DataInputStream in) throws IOException {
     OpBlockChecksumProto proto = OpBlockChecksumProto.parseFrom(vintPrefixed(in));
+    Baggage.join(proto.getHeader().getBaggage());
     TraceScope traceScope = continueTraceSpan(proto.getHeader(),
         proto.getClass().getSimpleName());
     try {

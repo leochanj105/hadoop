@@ -21,6 +21,10 @@ package org.apache.hadoop.hdfs.server.datanode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.retro.backgroundtasks.HDFSBackgroundTask;
+
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.HardLink;
@@ -597,6 +601,10 @@ public class BlockPoolSliceStorage extends Storage {
    * that holds the snapshot.
    */
   void doFinalize(File dnCurDir) throws IOException {
+    /* Retro: measure finalize latency */
+    HDFSBackgroundTask.FINALIZE.start();
+    final long begin = System.nanoTime();
+    
     File bpRoot = getBpRoot(blockpoolID, dnCurDir);
     StorageDirectory bpSd = new StorageDirectory(bpRoot);
     // block pool level previous directory
@@ -622,6 +630,8 @@ public class BlockPoolSliceStorage extends Storage {
           deleteDir(tmpDir);
         } catch (IOException ex) {
           LOG.error("Finalize upgrade for " + dataDirPath + " failed.", ex);
+        } finally {
+          HDFSBackgroundTask.FINALIZE.end(System.nanoTime() - begin);
         }
         LOG.info("Finalize upgrade for " + dataDirPath + " is complete.");
       }
@@ -631,6 +641,7 @@ public class BlockPoolSliceStorage extends Storage {
         return "Finalize " + dataDirPath;
       }
     }).start();
+    Baggage.discard(); /* Want the daemon to do the processing; this thread is done */
   }
 
   /**

@@ -17,13 +17,13 @@
  */
 package org.apache.hadoop.hdfs.server.datanode;
 
+import static org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.ShortCircuitFdResponse.DO_NOT_USE_RECEIPT_VERIFICATION;
+import static org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.ShortCircuitFdResponse.USE_RECEIPT_VERIFICATION;
 import static org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.Status.ERROR;
 import static org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.Status.ERROR_ACCESS_TOKEN;
 import static org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.Status.ERROR_INVALID;
 import static org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.Status.ERROR_UNSUPPORTED;
 import static org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.Status.SUCCESS;
-import static org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.ShortCircuitFdResponse.USE_RECEIPT_VERIFICATION;
-import static org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.ShortCircuitFdResponse.DO_NOT_USE_RECEIPT_VERIFICATION;
 import static org.apache.hadoop.hdfs.server.datanode.DataNode.DN_CLIENTTRACE_FORMAT;
 import static org.apache.hadoop.util.Time.monotonicNow;
 
@@ -87,10 +87,12 @@ import org.apache.hadoop.security.token.SecretManager.InvalidToken;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.DataChecksum;
 import org.apache.hadoop.util.StopWatch;
+import org.apache.hadoop.util.Time;
 
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
-import org.apache.hadoop.util.Time;
+
+import edu.brown.cs.systems.baggage.Baggage;
 
 
 /**
@@ -252,6 +254,9 @@ class DataXceiver extends Receiver implements Runnable {
         opStartTime = monotonicNow();
         processOp(op);
         ++opsProcessed;
+        
+        /* If any baggage remains, discard it here */
+        Baggage.discard();
       } while ((peer != null) &&
           (!peer.isClosed() && dnConf.socketKeepaliveTimeout > 0));
     } catch (Throwable t) {
@@ -333,6 +338,10 @@ class DataXceiver extends Receiver implements Runnable {
         bld.setStatus(ERROR);
         bld.setMessage(e.getMessage());
       }
+      
+      /* Baggage: include a copy of current baggage in request */
+      bld.setBaggage(Baggage.fork().toByteString());
+      
       bld.build().writeDelimitedTo(socketOut);
       if (fis != null) {
         FileDescriptor fds[] = new FileDescriptor[fis.length];
@@ -557,6 +566,10 @@ class DataXceiver extends Receiver implements Runnable {
         try {
           ClientReadStatusProto stat = ClientReadStatusProto.parseFrom(
               PBHelper.vintPrefixed(in));
+          
+          /* Baggage: join baggage in response */
+          { Baggage.join(stat.getBaggage()); }
+          
           if (!stat.hasStatus()) {
             LOG.warn("Client " + peer.getRemoteAddressString() +
                 " did not send a valid status code after reading. " +
@@ -743,6 +756,10 @@ class DataXceiver extends Receiver implements Runnable {
               BlockOpResponseProto.parseFrom(PBHelper.vintPrefixed(mirrorIn));
             mirrorInStatus = connectAck.getStatus();
             firstBadLink = connectAck.getFirstBadLink();
+            
+            /* Baggage: join ack's baggage */
+            { Baggage.join(connectAck.getBaggage()); }
+            
             if (LOG.isDebugEnabled() || mirrorInStatus != SUCCESS) {
               LOG.info("Datanode " + targets.length +
                        " got response for connect ack " +
@@ -757,6 +774,7 @@ class DataXceiver extends Receiver implements Runnable {
               .setStatus(ERROR)
                // NB: Unconditionally using the xfer addr w/o hostname
               .setFirstBadLink(targets[0].getXferAddr())
+              .setBaggage(Baggage.fork().toByteString())
               .build()
               .writeDelimitedTo(replyOut);
             replyOut.flush();
@@ -790,6 +808,7 @@ class DataXceiver extends Receiver implements Runnable {
         BlockOpResponseProto.newBuilder()
           .setStatus(mirrorInStatus)
           .setFirstBadLink(firstBadLink)
+          .setBaggage(Baggage.fork().toByteString())
           .build()
           .writeDelimitedTo(replyOut);
         replyOut.flush();
@@ -957,6 +976,7 @@ class DataXceiver extends Receiver implements Runnable {
           .setCrcPerBlock(crcPerBlock)
           .setMd5(ByteString.copyFrom(md5.getDigest()))
           .setCrcType(PBHelper.convert(checksum.getChecksumType())))
+        .setBaggage(Baggage.fork().toByteString())
         .build()
         .writeDelimitedTo(out);
       out.flush();
@@ -1116,6 +1136,9 @@ class DataXceiver extends Receiver implements Runnable {
         BlockOpResponseProto copyResponse = BlockOpResponseProto.parseFrom(
             PBHelper.vintPrefixed(proxyReply));
         
+        /* Baggage: join with response */
+        { Baggage.join(copyResponse.getBaggage()); } 
+        
         String logInfo = "copy block " + block + " from "
             + proxySock.getRemoteSocketAddress();
         DataTransferProtoUtil.checkBlockOpStatus(copyResponse, logInfo);
@@ -1208,7 +1231,8 @@ class DataXceiver extends Receiver implements Runnable {
   private static void writeResponse(Status status, String message, OutputStream out)
   throws IOException {
     BlockOpResponseProto.Builder response = BlockOpResponseProto.newBuilder()
-      .setStatus(status);
+      .setStatus(status)
+      .setBaggage(Baggage.fork().toByteString());
     if (message != null) {
       response.setMessage(message);
     }
@@ -1227,6 +1251,7 @@ class DataXceiver extends Receiver implements Runnable {
     BlockOpResponseProto response = BlockOpResponseProto.newBuilder()
       .setStatus(SUCCESS)
       .setReadOpChecksumInfo(ckInfo)
+      .setBaggage(Baggage.fork().toByteString())
       .build();
     response.writeDelimitedTo(out);
     out.flush();
@@ -1293,7 +1318,8 @@ class DataXceiver extends Receiver implements Runnable {
         try {
           if (reply) {
             BlockOpResponseProto.Builder resp = BlockOpResponseProto.newBuilder()
-              .setStatus(ERROR_ACCESS_TOKEN);
+              .setStatus(ERROR_ACCESS_TOKEN)
+              .setBaggage(Baggage.fork().toByteString());
             if (mode == BlockTokenSecretManager.AccessMode.WRITE) {
               DatanodeRegistration dnR = 
                 datanode.getDNRegistrationForBP(blk.getBlockPoolId());

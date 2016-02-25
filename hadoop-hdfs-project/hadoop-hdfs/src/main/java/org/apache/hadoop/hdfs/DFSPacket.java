@@ -28,6 +28,9 @@ import org.apache.hadoop.hdfs.protocol.datatransfer.PacketHeader;
 import org.apache.hadoop.hdfs.util.ByteArrayManager;
 import org.apache.htrace.Span;
 
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.baggage.DetachedBaggage;
+
 /****************************************************************
  * DFSPacket is used by DataStreamer and DFSOutputStream.
  * DFSOutputStream generates packets and then ask DatStreamer
@@ -66,6 +69,8 @@ class DFSPacket {
   private long[] traceParents = EMPTY;
   private int traceParentsUsed;
   private Span span;
+  
+  DetachedBaggage baggage;
 
   /**
    * Create a new packet.

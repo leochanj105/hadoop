@@ -53,6 +53,9 @@ import org.apache.htrace.TraceScope;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
+import edu.brown.cs.systems.retro.throttling.LocalThrottlingPoints;
+import edu.brown.cs.systems.retro.throttling.ThrottlingPoint;
+
 /**
  * Reads a block from the disk and sends it to a recipient.
  * 
@@ -94,6 +97,10 @@ import com.google.common.base.Preconditions;
  *  no checksum error, it replies to DataNode with OP_STATUS_CHECKSUM_OK.
  */
 class BlockSender implements java.io.Closeable {
+  
+  /* Retro: throttling point for block sender */
+  static final ThrottlingPoint throttlingpoint = LocalThrottlingPoints.getThrottlingPoint("BlockSender");
+  
   static final Log LOG = DataNode.LOG;
   static final Log ClientTraceLog = DataNode.ClientTraceLog;
   private static final boolean is32Bit = 
@@ -618,6 +625,9 @@ class BlockSender implements java.io.Closeable {
     if (throttler != null) { // rebalancing so throttle
       throttler.throttle(packetLen);
     }
+    
+    /* Retro throttle */
+    { throttlingpoint.throttle(); }
 
     return dataLen;
   }

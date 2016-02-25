@@ -23,6 +23,10 @@ import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Futures;
+
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.retro.backgroundtasks.HDFSBackgroundTask;
+
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;
@@ -897,6 +901,10 @@ public class DataStorage extends Storage {
    * Do nothing, if previous directory does not exist
    */
   void doFinalize(StorageDirectory sd) throws IOException {
+    /* Retro: finalize background task */
+    HDFSBackgroundTask.FINALIZE.start();
+    final long begin = System.nanoTime();
+    
     File prevDir = sd.getPreviousDir();
     if (!prevDir.exists())
       return; // already discarded
@@ -925,12 +933,16 @@ public class DataStorage extends Storage {
             }
           } catch(IOException ex) {
             LOG.error("Finalize upgrade for " + dataDirPath + " failed", ex);
+          } finally {
+            /* Retro: finalize background task complete */
+            HDFSBackgroundTask.FINALIZE.end(System.nanoTime() - begin);
           }
           LOG.info("Finalize upgrade for " + dataDirPath + " is complete");
         }
         @Override
         public String toString() { return "Finalize " + dataDirPath; }
       }).start();
+    Baggage.discard();
   }
   
   

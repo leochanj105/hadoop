@@ -65,6 +65,8 @@ import org.apache.hadoop.util.VersionUtil;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 
+import edu.brown.cs.systems.retro.backgroundtasks.HDFSBackgroundTask;
+
 /**
  * A thread per active or standby namenode to perform:
  * <ul>
@@ -650,7 +652,16 @@ class BPServiceActor implements Runnable {
           // -- Bytes remaining
           //
           if (!dn.areHeartbeatsDisabledForTests()) {
-            HeartbeatResponse resp = sendHeartBeat();
+            /* Retro: measure heartbeat latency */
+            HDFSBackgroundTask.HEARTBEAT.start();
+            long begin = System.nanoTime();
+            HeartbeatResponse resp;
+            try {
+              resp = sendHeartBeat();
+            } finally {
+              HDFSBackgroundTask.HEARTBEAT.end(System.nanoTime() - begin);
+            }
+            
             assert resp != null;
             dn.getMetrics().addHeartbeat(scheduler.monotonicNow() - startTime);
 

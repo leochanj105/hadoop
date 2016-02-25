@@ -234,6 +234,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.net.InetAddresses;
 
+import edu.brown.cs.systems.baggage.Baggage;
+
 /********************************************************
  * DFSClient can connect to a Hadoop Filesystem and 
  * perform basic file tasks.  It uses the ClientProtocol
@@ -2259,6 +2261,9 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
 
           final BlockOpResponseProto reply =
             BlockOpResponseProto.parseFrom(PBHelper.vintPrefixed(in));
+          
+          /* Baggage: join baggage included in reply */
+          { Baggage.join(reply.getBaggage()); }
 
           String logInfo = "for block " + block + " from datanode " + datanodes[j];
           DataTransferProtoUtil.checkBlockOpStatus(reply, logInfo);
@@ -2419,6 +2424,10 @@ public class DFSClient implements java.io.Closeable, RemotePeerFactory,
           0, 1, true, CachingStrategy.newDefaultStrategy());
       final BlockOpResponseProto reply =
           BlockOpResponseProto.parseFrom(PBHelper.vintPrefixed(in));
+      
+      /* Baggage: join baggage included in reply */
+      { Baggage.join(reply.getBaggage()); }
+      
       String logInfo = "trying to read " + lb.getBlock() + " from datanode " + dn;
       DataTransferProtoUtil.checkBlockOpStatus(reply, logInfo);
 

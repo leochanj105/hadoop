@@ -63,6 +63,8 @@ import org.apache.hadoop.util.Time;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
+import edu.brown.cs.systems.baggage.Baggage;
+
 
 /** 
  * Utility class to create BlockReader implementations.
@@ -540,6 +542,10 @@ public class BlockReaderFactory implements ShortCircuitReplicaCreator {
     DataInputStream in = new DataInputStream(peer.getInputStream());
     BlockOpResponseProto resp = BlockOpResponseProto.parseFrom(
         PBHelper.vintPrefixed(in));
+    
+    /* Baggage: pick up baggage from response */
+    { Baggage.join(resp.getBaggage()); }
+    
     DomainSocket sock = peer.getDomainSocket();
     failureInjector.injectRequestFileDescriptorsFailure();
     switch (resp.getStatus()) {

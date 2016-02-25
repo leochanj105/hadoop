@@ -61,7 +61,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     </dependency>
     <dependency>
       <groupId>edu.brown.cs.systems</groupId>
-      <artifactId>pivottracing-client</artifactId>
+      <artifactId>pivottracing-agent</artifactId>
       <version>${tracingplane.version}</version>
     </dependency>
     <dependency>
@@ -289,8 +289,8 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
               <target>1.7</target>
               <complianceLevel>1.7</complianceLevel>
               <Xjoinpoints>synchronization</Xjoinpoints>
-              <showWeaveInfo>true</showWeaveInfo>
-              <verbose>true</verbose>
+              <showWeaveInfo>false</showWeaveInfo>
+              <verbose>false</verbose>
             </configuration>
           </execution>
         </executions>

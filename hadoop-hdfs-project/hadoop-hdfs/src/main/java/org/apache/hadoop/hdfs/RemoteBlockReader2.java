@@ -56,6 +56,8 @@ import org.apache.htrace.TraceScope;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import edu.brown.cs.systems.baggage.Baggage;
+
 /**
  * This is a wrapper around connection to datanode
  * and understands checksum, offset etc.
@@ -356,6 +358,7 @@ public class RemoteBlockReader2  implements BlockReader {
     
     ClientReadStatusProto.newBuilder()
       .setStatus(statusCode)
+      .setBaggage(Baggage.fork().toByteString())
       .build()
       .writeDelimitedTo(out);
 
@@ -421,6 +424,10 @@ public class RemoteBlockReader2  implements BlockReader {
 
     BlockOpResponseProto status = BlockOpResponseProto.parseFrom(
         PBHelper.vintPrefixed(in));
+    
+    // Baggage: join baggage in response
+    { Baggage.join(status.getBaggage()); }
+    
     checkSuccess(status, peer, block, file);
     ReadOpChecksumInfoProto checksumInfo =
       status.getReadOpChecksumInfo();

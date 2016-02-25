@@ -73,7 +73,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceAudience.Private;
-import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configuration.IntegerRanges;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
@@ -126,6 +125,13 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Message;
 import com.google.protobuf.Message.Builder;
+
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.baggage.DetachedBaggage;
+import edu.brown.cs.systems.retro.resources.Network;
+import edu.brown.cs.systems.retro.resources.QueueResource;
+import edu.brown.cs.systems.tracing.Utils;
+import edu.brown.cs.systems.tracing.aspects.Annotations.BaggageInheritanceDisabled;
 
 /** An abstract IPC service.  IPC calls take a single {@link Writable} as a
  * parameter, and return a {@link Writable} as their value.  A service runs on
@@ -375,6 +381,8 @@ public abstract class Server {
 
   volatile private boolean running = true;         // true while server runs
   private CallQueueManager<Call> callQueue;
+  
+  private QueueResource callQueueInstrumentation; // Retro: External instrumentation for hairy call queue
 
   // maintains the set of client connections and handles idle timeouts
   private ConnectionManager connectionManager;
@@ -510,6 +518,9 @@ public abstract class Server {
     private final RPC.RpcKind rpcKind;
     private final byte[] clientId;
     private final Span traceSpan; // the tracing span on the server side
+    
+    private DetachedBaggage baggage; // Baggage: baggage associated with this call
+    public long enqueue, dequeue, complete; // Retro: Timers for queue instrumentation; hacky but quick
 
     public Call(int id, int retryCount, Writable param, 
         Connection connection) {
@@ -553,6 +564,7 @@ public abstract class Server {
   }
 
   /** Listens on the socket. Creates jobs for the handler threads*/
+  @BaggageInheritanceDisabled // Baggage: listener is a processing loop
   private class Listener extends Thread {
     
     private ServerSocketChannel acceptChannel = null; //the accept channel
@@ -976,6 +988,10 @@ public abstract class Server {
           // Extract the first call
           //
           call = responseQueue.removeFirst();
+          
+          /* Attach the call's baggage */
+          { Baggage.start(call.baggage); }
+          
           SocketChannel channel = call.connection.channel;
           if (LOG.isDebugEnabled()) {
             LOG.debug(Thread.currentThread().getName() + ": responding to " + call);
@@ -1005,6 +1021,10 @@ public abstract class Server {
             // If we were unable to write the entire response out, then 
             // insert in Selector queue. 
             //
+            
+            /* Baggage: detach baggage and save it with the call */
+            { call.baggage = Baggage.stop(); }
+            
             call.connection.responseQueue.addFirst(call);
             
             if (inHandler) {
@@ -1037,6 +1057,9 @@ public abstract class Server {
           done = true;               // error. no more data for this channel.
           closeConnection(call.connection);
         }
+        
+        /* Just in case the thread still has baggage, here we discard it */
+        { Baggage.discard(); }
       }
       return done;
     }
@@ -1773,6 +1796,10 @@ public abstract class Server {
         }
         checkRpcHeaders(header);
         
+        /* Retro: have to explicitly call network instrumentation since attribution isn't possible until after headers */
+        { Network.Read.alreadyStarted(this);
+          Network.Read.alreadyFinished(this, buf.length); }
+        
         if (callId < 0) { // callIds typically used during connection setup
           processRpcOutOfBandRequest(header, dis);
         } else if (!connectionContextRead) {
@@ -1790,6 +1817,9 @@ public abstract class Server {
             ioe.getClass().getName(), ioe.getMessage());
         responder.doRespond(call);
         throw wrse;
+      } finally {
+        /* Just in case the thread has baggage, here we discard it */
+        { Baggage.discard(); }
       }
     }
 
@@ -1800,6 +1830,9 @@ public abstract class Server {
      */
     private void checkRpcHeaders(RpcRequestHeaderProto header)
         throws WrappedRpcServerException {
+      /* Baggage: resume from the header */
+      { Baggage.start(header.getBaggage()); }
+      
       if (!header.hasRpcOp()) {
         String err = " IPC Server: No rpc op in rpcRequestHeader";
         throw new WrappedRpcServerException(
@@ -1869,6 +1902,14 @@ public abstract class Server {
       Call call = new Call(header.getCallId(), header.getRetryCount(),
           rpcRequest, this, ProtoUtil.convert(header.getRpcKind()),
           header.getClientId().toByteArray(), traceSpan);
+      
+      /* Retro: manual instrumentation of call queue */
+      {  
+        if (callQueueInstrumentation!=null) {
+          callQueueInstrumentation.enqueue();
+        }
+        call.enqueue = System.nanoTime(); 
+      }
 
       callQueue.put(call);              // queue the call; maybe blocked here
       incRpcCount();  // Increment the rpc count
@@ -1999,6 +2040,7 @@ public abstract class Server {
   }
 
   /** Handles queued calls . */
+  @BaggageInheritanceDisabled /* Baggage: don't inherit baggage */
   private class Handler extends Thread {
     public Handler(int instanceNumber) {
       this.setDaemon(true);
@@ -2015,6 +2057,20 @@ public abstract class Server {
         TraceScope traceScope = null;
         try {
           final Call call = callQueue.take(); // pop the queue; maybe blocked here
+          
+          /* Retro: manually save dequeue time */
+          { call.dequeue = System.nanoTime(); }
+          
+          /* Baggage: attach the call's baggage */
+          { Baggage.start(call.baggage); }
+          
+          /* Retro: manually invoke queue instrumentation */
+          { if (callQueueInstrumentation!=null)
+              callQueueInstrumentation.starting(call.enqueue, call.dequeue); }
+          
+          /* Retro: wrap in try/finally to invoke call queue instrumentation when call completes */
+          try {
+          
           if (LOG.isDebugEnabled()) {
             LOG.debug(Thread.currentThread().getName() + ": " + call + " for RpcKind " + call.rpcKind);
           }
@@ -2103,6 +2159,15 @@ public abstract class Server {
             }
             responder.doRespond(call);
           }
+          
+          /* Retro: wrapped in try/finally to invoke call queue instrumentation on completion */
+          } finally {
+            call.complete = System.nanoTime();
+            if (callQueueInstrumentation != null) {
+              callQueueInstrumentation.finished(call.enqueue, call.dequeue, call.complete);
+            }
+          }
+          
         } catch (InterruptedException e) {
           if (running) {                          // unexpected -- log it
             LOG.info(Thread.currentThread().getName() + " unexpectedly interrupted", e);
@@ -2201,6 +2266,18 @@ public abstract class Server {
     final String prefix = getQueueClassPrefix();
     this.callQueue = new CallQueueManager<Call>(getQueueClass(prefix, conf),
         maxQueueSize, prefix, conf);
+    
+    /* Retro: in old hadoop versions, we replaced the call queue with a throttling queue.
+     * TODO: migrate throttling queue / instrumentation to work with new CallQueueManager */
+    { 
+      if ("NameNode".equals(Utils.getProcessName())) {
+        // Hack; put a throttling queue on NN only for now
+  //      this.callQueue = LocalThrottlingPoints.getThrottlingQueue(Utils.getProcessName()+"-"+serverName);
+        this.callQueueInstrumentation = new QueueResource("Server-"+System.identityHashCode(this)+"-callQueue", handlerCount);
+  //    } else {
+  //      this.callQueue  = new LinkedBlockingQueue<Call>(maxQueueSize);
+      }
+    }
 
     this.secretManager = (SecretManager<TokenIdentifier>) secretManager;
     this.authorize = 
@@ -2309,6 +2386,9 @@ public abstract class Server {
     headerBuilder.setRetryCount(call.retryCount);
     headerBuilder.setStatus(status);
     headerBuilder.setServerIpcVersionNum(CURRENT_VERSION);
+    
+    /* Baggage: send a copy of the current baggage, since stuff will still happen in this thread before completion */
+    { headerBuilder.setBaggage(Baggage.fork().toByteString()); }
 
     if (status == RpcStatusProto.SUCCESS) {
       RpcResponseHeaderProto header = headerBuilder.build();
@@ -2358,6 +2438,9 @@ public abstract class Server {
       wrapWithSasl(responseBuf, call);
     }
     call.setResponse(ByteBuffer.wrap(responseBuf.toByteArray()));
+    
+    /* Baggage: Detach the current thread's baggage and save it with the call for responding */
+    { call.baggage = Baggage.stop(); }
   }
   
   /**

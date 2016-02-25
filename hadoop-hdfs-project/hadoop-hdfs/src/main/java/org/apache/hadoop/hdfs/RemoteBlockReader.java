@@ -51,6 +51,8 @@ import org.apache.htrace.Sampler;
 import org.apache.htrace.Trace;
 import org.apache.htrace.TraceScope;
 
+import edu.brown.cs.systems.baggage.Baggage;
+
 
 /**
  * @deprecated this is an old implementation that is being left around
@@ -423,6 +425,10 @@ public class RemoteBlockReader extends FSInputChecker implements BlockReader {
     
     BlockOpResponseProto status = BlockOpResponseProto.parseFrom(
         PBHelper.vintPrefixed(in));
+    
+    /* Baggage: join with response baggage */
+    { Baggage.join(status.getBaggage()); }
+    
     RemoteBlockReader2.checkSuccess(status, peer, block, file);
     ReadOpChecksumInfoProto checksumInfo =
       status.getReadOpChecksumInfo();

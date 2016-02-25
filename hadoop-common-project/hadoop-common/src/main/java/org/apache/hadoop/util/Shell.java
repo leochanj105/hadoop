@@ -34,6 +34,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 
+import edu.brown.cs.systems.baggage.Baggage;
+
 /** 
  * A base class for running a Unix command.
  * 
@@ -467,6 +469,10 @@ abstract public class Shell {
     if (environment != null) {
       builder.environment().putAll(this.environment);
     }
+    
+    /* Baggage: fork current baggage for passing to the child process */
+    { builder.environment().putAll(Baggage.fork().environment()); }
+    
     if (dir != null) {
       builder.directory(this.dir);
     }
@@ -536,6 +542,9 @@ abstract public class Shell {
       }
       // wait for the process to finish and check the exit code
       exitCode  = process.waitFor();
+      
+      // Baggage TODO: pass baggage back from child process
+      
       // make sure that the error thread exits
       joinThread(errThread);
       completed.set(true);

@@ -18,7 +18,7 @@
 
 package org.apache.hadoop.ipc;
 
-import static org.apache.hadoop.ipc.RpcConstants.*;
+import static org.apache.hadoop.ipc.RpcConstants.PING_CALL_ID;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -95,6 +95,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.protobuf.CodedOutputStream;
+
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.baggage.DetachedBaggage;
+import edu.brown.cs.systems.retro.resources.Network;
+import edu.brown.cs.systems.tracing.aspects.Annotations.BaggageInheritanceDisabled;
 
 /** A client for an IPC service.  IPC calls take a single {@link Writable} as a
  * parameter, and return a {@link Writable} as their value.  A service runs on
@@ -288,6 +293,10 @@ public class Client {
     if (header == null) {
       throw new EOFException("Response is null.");
     }
+    
+    /* Pick up any baggage values - XTrace metadata, Retro tenant, etc. */
+    { Baggage.start(header.getBaggage()); }
+    
     if (header.hasClientId()) {
       // check client IDs
       final byte[] id = header.getClientId().toByteArray();
@@ -316,6 +325,7 @@ public class Client {
     IOException error;          // exception, null if success
     final RPC.RpcKind rpcKind;      // Rpc EngineKind
     boolean done;               // true when call is done
+    DetachedBaggage baggage;            // this call's baggage
 
     private Call(RPC.RpcKind rpcKind, Writable param) {
       this.rpcKind = rpcKind;
@@ -372,6 +382,7 @@ public class Client {
   /** Thread that reads responses and notifies callers.  Each connection owns a
    * socket connected to a remote address.  Calls are multiplexed through this
    * socket: responses may be delivered out of order. */
+  @BaggageInheritanceDisabled // Don't inherit baggage from whoever creates this thread
   private class Connection extends Thread {
     private InetSocketAddress server;             // server ip:port
     private final ConnectionId remoteId;                // connection id
@@ -698,7 +709,7 @@ public class Client {
         AtomicBoolean fallbackToSimpleAuth) {
       if (socket != null || shouldCloseConnection.get()) {
         return;
-      } 
+      }
       try {
         if (LOG.isDebugEnabled()) {
           LOG.debug("Connecting to "+server);
@@ -970,6 +981,9 @@ public class Client {
 
     @Override
     public void run() {
+      // Baggage: this is a long-lived thread that is lazily started by the first client.
+      // The @BaggageInheritanceDisabled class annotation prevents automatic baggage propagation
+      
       if (LOG.isDebugEnabled())
         LOG.debug(getName() + ": starting, having connections " 
             + connections.size());
@@ -1080,14 +1094,32 @@ public class Client {
       }
       touch();
       
+      Baggage.discard();
       try {
-        int totalLen = in.readInt();
-        RpcResponseHeaderProto header = 
-            RpcResponseHeaderProto.parseDelimitedFrom(in);
+        /* Retro instrumentation.
+         * We can't attribute this network consumption until after it's complete.
+         * So temporarily disable network attribution while we read the data.
+         * Then attribute it afterwards once we know the owner */
+        { Network.ignore(true); }
+        
+        int totalLen;
+        RpcResponseHeaderProto header;
+        try {
+          totalLen = in.readInt();
+          header = RpcResponseHeaderProto.parseDelimitedFrom(in);
+        } finally {
+          Network.ignore(false);
+        }
         checkResponse(header);
 
         int headerLen = header.getSerializedSize();
         headerLen += CodedOutputStream.computeRawVarint32Size(headerLen);
+        
+        /* Retro instrumentation.
+         * checkResponse will have picked up owner info from header,
+         * so now attribute the consumption */
+        { Network.Read.alreadyStarted(in);
+          Network.Read.alreadyFinished(in, headerLen); }
 
         int callId = header.getCallId();
         if (LOG.isDebugEnabled())
@@ -1100,6 +1132,9 @@ public class Client {
           value.readFields(in);                 // read value
           calls.remove(callId);
           call.setRpcResponse(value);
+          
+          /* Baggage: detach and save baggage with the call */
+          { call.baggage = Baggage.stop(); }
           
           // verify that length was correct
           // only for ProtobufEngine where len can be verified easily
@@ -1142,6 +1177,9 @@ public class Client {
         }
       } catch (IOException e) {
         markClosed(e);
+      } finally {
+        /* Baggage: if anything remains here, it should be discarded */
+        { Baggage.discard(); }
       }
     }
     
@@ -1469,7 +1507,10 @@ public class Client {
           throw new InterruptedIOException("Call interrupted");
         }
       }
-
+      
+      /* Baggage: join the returned baggage from the call */
+      { Baggage.join(call.baggage); }
+      
       if (call.error != null) {
         if (call.error instanceof RemoteException) {
           call.error.fillInStackTrace();

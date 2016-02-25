@@ -94,6 +94,8 @@ import org.apache.hadoop.crypto.key.KeyProviderDelegationTokenExtension;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
+import edu.brown.cs.systems.pivottracing.agent.PivotTracing;
+
 
 /****************************************************************
  * Implementation of the abstract FileSystem for the DFS system.
@@ -114,6 +116,7 @@ public class DistributedFileSystem extends FileSystem {
   
   static{
     HdfsConfiguration.init();
+    PivotTracing.initialize();
   }
 
   public DistributedFileSystem() {

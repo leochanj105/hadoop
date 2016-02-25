@@ -33,6 +33,8 @@ import org.apache.hadoop.io.IOUtils;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 
+import edu.brown.cs.systems.baggage.BaggageContents;
+
 /**
  * Class to handle reading packets one-at-a-time from the wire.
  * These packets are used both for reading and writing data to/from
@@ -179,6 +181,7 @@ public class PacketReceiver implements Closeable {
       curHeader = new PacketHeader();
     }
     curHeader.setFieldsFromData(payloadLen, headerBuf);
+    curHeader.joinBaggage();
     
     // Compute the sub-slices of the packet
     int checksumLen = dataPlusChecksumLen - curHeader.getDataLen();
@@ -197,9 +200,30 @@ public class PacketReceiver implements Closeable {
   public void mirrorPacketTo(DataOutputStream mirrorOut) throws IOException {
     Preconditions.checkState(!useDirectBuffers,
         "Currently only supported for non-direct buffers");
+    updateHeaderBaggage();
     mirrorOut.write(curPacketBuf.array(),
         curPacketBuf.arrayOffset(),
         curPacketBuf.remaining());
+  }
+  
+  /**
+   * This updates the baggage in the packet header
+   */
+  private void updateHeaderBaggage() {
+    // Only update context if there was a previous one, and we assume they have the exact
+    // same length, so we can just drop in a new packet header.
+    if (!BaggageContents.isEmpty()) {
+      PacketHeader newHeader = new PacketHeader(curHeader.getPacketLen(), curHeader.getOffsetInBlock(),
+          curHeader.getSeqno(), curHeader.isLastPacketInBlock(), curHeader.getDataLen(),
+          curHeader.getSyncBlock());
+      int priorPosition = curPacketBuf.position();
+      int priorLimit = curPacketBuf.limit();
+      curPacketBuf.position(0);
+      curPacketBuf.limit(newHeader.getSerializedSize());
+      newHeader.putInBuffer(curPacketBuf);
+      curPacketBuf.position(priorPosition);
+      curPacketBuf.limit(priorLimit);
+    }
   }
 
   

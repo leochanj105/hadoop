@@ -208,6 +208,11 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.BlockingService;
 
+import edu.brown.cs.systems.pivottracing.agent.PivotTracing;
+import edu.brown.cs.systems.retro.aspects.Retro;
+import edu.brown.cs.systems.retro.backgroundtasks.HDFSBackgroundTask;
+import edu.brown.cs.systems.tracing.aspects.Annotations.BaggageInheritanceDisabled;
+
 /**********************************************************
  * DataNode is a class (and program) that stores a set of
  * blocks for a DFS deployment.  A single deployment can
@@ -2029,6 +2034,7 @@ public class DataNode extends ReconfigurableBase
    * Used for transferring a block of data.  This class
    * sends a piece of data to another DataNode.
    */
+  @BaggageInheritanceDisabled /* Treat each data transfer as a standalone background task */
   private class DataTransfer implements Runnable {
     final DatanodeInfo[] targets;
     final StorageType[] targetStorageTypes;
@@ -2070,6 +2076,10 @@ public class DataNode extends ReconfigurableBase
      */
     @Override
     public void run() {
+      /* Retro: begin the background task */
+      HDFSBackgroundTask.REPLICATION.start();
+      final long begin = System.nanoTime();
+      
       xmitsInProgress.getAndIncrement();
       Socket sock = null;
       DataOutputStream out = null;
@@ -2155,6 +2165,9 @@ public class DataNode extends ReconfigurableBase
         IOUtils.closeStream(out);
         IOUtils.closeStream(in);
         IOUtils.closeSocket(sock);
+        
+        /* Retro: background task complete */
+        HDFSBackgroundTask.REPLICATION.end(System.nanoTime() - begin);
       }
     }
   }
@@ -2501,6 +2514,8 @@ public class DataNode extends ReconfigurableBase
     if (DFSUtil.parseHelpArgument(args, DataNode.USAGE, System.out, true)) {
       System.exit(0);
     }
+    
+    PivotTracing.initialize(); // PivotTracing: aspects should have done this automatically
 
     secureMain(args, null);
   }
@@ -2514,11 +2529,17 @@ public class DataNode extends ReconfigurableBase
       @Override
       public void run() {
         for(RecoveringBlock b : blocks) {
+          /* Retro: block recovery background task */
+          HDFSBackgroundTask.RECOVER.start();
+          final long begin = System.nanoTime();
+          
           try {
             logRecoverBlock(who, b);
             recoverBlock(b);
           } catch (IOException e) {
             LOG.warn("recoverBlocks FAILED: " + b, e);
+          } finally {
+            HDFSBackgroundTask.RECOVER.end(System.nanoTime() - begin);
           }
         }
       }

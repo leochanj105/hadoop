@@ -41,6 +41,8 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.nativeio.NativeIO;
 import org.apache.hadoop.io.nativeio.NativeIOException;
 
+import edu.brown.cs.systems.retro.backgroundtasks.HDFSBackgroundTask;
+
 /**
  * This class is a container of multiple thread pools, each for a volume,
  * so that we can schedule async disk operations easily.
@@ -213,11 +215,11 @@ class FsDatasetAsyncDiskService {
    * dfsUsed statistics accordingly.
    */
   void deleteAsync(FsVolumeReference volumeRef, File blockFile, File metaFile,
-      ExtendedBlock block, String trashDirectory) {
+      ExtendedBlock block, String trashDirectory, long begin) {
     LOG.info("Scheduling " + block.getLocalBlock()
         + " file " + blockFile + " for deletion");
     ReplicaFileDeleteTask deletionTask = new ReplicaFileDeleteTask(
-        volumeRef, blockFile, metaFile, block, trashDirectory);
+        volumeRef, blockFile, metaFile, block, trashDirectory, begin);
     execute(((FsVolumeImpl) volumeRef.getVolume()).getCurrentDir(), deletionTask);
   }
   
@@ -234,15 +236,17 @@ class FsDatasetAsyncDiskService {
     final File metaFile;
     final ExtendedBlock block;
     final String trashDirectory;
+    final long begin;
     
     ReplicaFileDeleteTask(FsVolumeReference volumeRef, File blockFile,
-        File metaFile, ExtendedBlock block, String trashDirectory) {
+        File metaFile, ExtendedBlock block, String trashDirectory, long begin) {
       this.volumeRef = volumeRef;
       this.volume = (FsVolumeImpl) volumeRef.getVolume();
       this.blockFile = blockFile;
       this.metaFile = metaFile;
       this.block = block;
       this.trashDirectory = trashDirectory;
+      this.begin = begin;
     }
 
     @Override
@@ -297,6 +301,9 @@ class FsDatasetAsyncDiskService {
       }
       updateDeletedBlockId(block);
       IOUtils.cleanup(null, volumeRef);
+      
+      /* Retro: invalidate background task complete */
+      HDFSBackgroundTask.INVALIDATE.end(System.nanoTime() - begin);
     }
   }
   

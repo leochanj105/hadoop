@@ -37,6 +37,8 @@ import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.Time;
 import com.google.common.annotations.VisibleForTesting;
 
+import edu.brown.cs.systems.tracing.aspects.Annotations.BaggageInheritanceDisabled;
+
 /**
  * <p>
  * Used by {@link DFSClient} for renewing file-being-written leases
@@ -286,6 +288,42 @@ class LeaseRenewer {
     return emptyTime != Long.MAX_VALUE
         && Time.monotonicNow() - emptyTime > gracePeriod;
   }
+  
+  @BaggageInheritanceDisabled /* Separate inline class so that we can disable baggage inheritance */
+  private class RenewerDaemon implements Runnable {
+
+    public final int id = ++currentId;
+    
+    @Override
+    public void run() {
+      try {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Lease renewer daemon for " + clientsString()
+              + " with renew id " + id + " started");
+        }
+        LeaseRenewer.this.run(id);
+      } catch(InterruptedException e) {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(LeaseRenewer.this.getClass().getSimpleName()
+              + " is interrupted.", e);
+        }
+      } finally {
+        synchronized(LeaseRenewer.this) {
+          Factory.INSTANCE.remove(LeaseRenewer.this);
+        }
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Lease renewer daemon for " + clientsString()
+              + " with renew id " + id + " exited");
+        }
+      }
+    }
+    
+    @Override
+    public String toString() {
+      return String.valueOf(LeaseRenewer.this);
+    }
+    
+  }
 
   synchronized void put(final long inodeId, final DFSOutputStream out,
       final DFSClient dfsc) {
@@ -293,36 +331,7 @@ class LeaseRenewer {
       if (!isRunning() || isRenewerExpired()) {
         //start a new deamon with a new id.
         final int id = ++currentId;
-        daemon = new Daemon(new Runnable() {
-          @Override
-          public void run() {
-            try {
-              if (LOG.isDebugEnabled()) {
-                LOG.debug("Lease renewer daemon for " + clientsString()
-                    + " with renew id " + id + " started");
-              }
-              LeaseRenewer.this.run(id);
-            } catch(InterruptedException e) {
-              if (LOG.isDebugEnabled()) {
-                LOG.debug(LeaseRenewer.this.getClass().getSimpleName()
-                    + " is interrupted.", e);
-              }
-            } finally {
-              synchronized(LeaseRenewer.this) {
-                Factory.INSTANCE.remove(LeaseRenewer.this);
-              }
-              if (LOG.isDebugEnabled()) {
-                LOG.debug("Lease renewer daemon for " + clientsString()
-                    + " with renew id " + id + " exited");
-              }
-            }
-          }
-          
-          @Override
-          public String toString() {
-            return String.valueOf(LeaseRenewer.this);
-          }
-        });
+        daemon = new Daemon(new RenewerDaemon());
         daemon.start();
       }
       dfsc.putFileBeingWritten(inodeId, out);

@@ -110,6 +110,9 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.baggage.DetachedBaggage;
+
 
 /****************************************************************
  * DFSOutputStream creates files from a stream of bytes.
@@ -186,6 +189,8 @@ public class DFSOutputStream extends FSOutputSummer
   private FileEncryptionInfo fileEncryptionInfo;
   private static final BlockStoragePolicySuite blockStoragePolicySuite =
       BlockStoragePolicySuite.createDefaultSuite();
+  
+  private DetachedBaggage lastAckedBaggage = null;
 
   /** Use {@link ByteArrayManager} to create buffer for non-heartbeat packets.*/
   private DFSPacket createPacket(int packetSize, int chunksPerPkt, long offsetInBlock,
@@ -431,6 +436,10 @@ public class DFSOutputStream extends FSOutputSummer
               assert one != null;
             } else {
               one = dataQueue.getFirst(); // regular data packet
+              
+              /* Baggage: join packet's baggage */
+              Baggage.join(one.baggage);
+              
               long parents[] = one.getTraceParents();
               if (parents.length > 0) {
                 scope = Trace.startSpan("dataStreamer", new TraceInfo(0, parents[0]));
@@ -491,6 +500,10 @@ public class DFSOutputStream extends FSOutputSummer
             if (!one.isHeartbeatPacket()) {
               span = scope.detach();
               one.setTraceSpan(span);
+              
+              /* Baggage: fork current baggage into packet */
+              { one.baggage = Baggage.fork(); }
+              
               dataQueue.removeFirst();
               ackQueue.addLast(one);
               dataQueue.notifyAll();
@@ -518,6 +531,9 @@ public class DFSOutputStream extends FSOutputSummer
             throw e;
           } finally {
             writeScope.close();
+            
+            /* Baggage: fork current baggage into packet */
+            { one.baggage = Baggage.fork(); }
           }
           lastPacket = Time.monotonicNow();
           
@@ -732,6 +748,10 @@ public class DFSOutputStream extends FSOutputSummer
             // read an ack from the pipeline
             long begin = Time.monotonicNow();
             ack.readFields(blockReplyStream);
+            
+            /* Baggage: join baggage included with the ack */
+            { ack.joinBaggage(); }
+            
             long duration = Time.monotonicNow() - begin;
             if (duration > dfsclientSlowLogThresholdMs
                 && ack.getSeqno() != DFSPacket.HEART_BEAT_SEQNO) {
@@ -780,6 +800,10 @@ public class DFSOutputStream extends FSOutputSummer
             synchronized (dataQueue) {
               one = ackQueue.getFirst();
             }
+            
+            /* Baggage: hook back up with the baggage of the packet waiting to be acked */
+            { Baggage.join(one.baggage); }
+            
             if (one.getSeqno() != seqno) {
               throw new IOException("ResponseProcessor: Expecting seqno " +
                                     " for block " + block +
@@ -803,6 +827,7 @@ public class DFSOutputStream extends FSOutputSummer
               scope = Trace.continueSpan(one.getTraceSpan());
               one.setTraceSpan(null);
               lastAckedSeqno = seqno;
+              lastAckedBaggage = DetachedBaggage.merge(lastAckedBaggage, Baggage.fork());
               ackQueue.removeFirst();
               dataQueue.notifyAll();
 
@@ -1048,6 +1073,10 @@ public class DFSOutputStream extends FSOutputSummer
         //ack
         BlockOpResponseProto response =
           BlockOpResponseProto.parseFrom(PBHelper.vintPrefixed(in));
+        
+        /* Baggage: join baggage included with response */
+        { Baggage.join(response.getBaggage()); }
+        
         if (SUCCESS != response.getStatus()) {
           throw new IOException("Failed to add a datanode");
         }
@@ -1345,6 +1374,10 @@ public class DFSOutputStream extends FSOutputSummer
           // receive ack for connect
           BlockOpResponseProto resp = BlockOpResponseProto.parseFrom(
               PBHelper.vintPrefixed(blockReplyStream));
+          
+          /* Baggage: Join baggage included with ack */
+          { Baggage.join(resp.getBaggage()); }
+          
           pipelineStatus = resp.getStatus();
           firstBadLink = resp.getFirstBadLink();
           
@@ -1754,12 +1787,17 @@ public class DFSOutputStream extends FSOutputSummer
   private void queueCurrentPacket() {
     synchronized (dataQueue) {
       if (currentPacket == null) return;
+      
       currentPacket.addTraceParent(Trace.currentSpan());
       dataQueue.addLast(currentPacket);
       lastQueuedSeqno = currentPacket.getSeqno();
       if (DFSClient.LOG.isDebugEnabled()) {
         DFSClient.LOG.debug("Queued packet " + currentPacket.getSeqno());
       }
+
+      /* Baggage: fork current baggage into packet */
+      { currentPacket.baggage = Baggage.fork(); }
+      
       currentPacket = null;
       dataQueue.notifyAll();
     }
@@ -1767,6 +1805,9 @@ public class DFSOutputStream extends FSOutputSummer
 
   private void waitAndQueueCurrentPacket() throws IOException {
     synchronized (dataQueue) {
+      // Baggage: join up with the current packet
+      { if (currentPacket != null) Baggage.join(currentPacket.baggage); }
+      
       try {
       // If queue is full, then wait till we have enough space
         boolean firstWait = true;
@@ -1792,6 +1833,11 @@ public class DFSOutputStream extends FSOutputSummer
               // the MAX_PACKETS length.
               Thread.currentThread().interrupt();
               break;
+            }
+            
+            /* Baggage: had to wait for some acks; join their baggage once they arrive */
+            if (dataQueue.size() + ackQueue.size() > dfsClient.getConf().writeMaxPackets) {
+              Baggage.join(lastAckedBaggage);
             }
           }
         } finally {
@@ -1846,8 +1892,11 @@ public class DFSOutputStream extends FSOutputSummer
             ", chunksPerPacket=" + chunksPerPacket +
             ", bytesCurBlock=" + bytesCurBlock);
       }
+    } else {
+      /* Baggage: Join up with previous baggage that wrote to this packet */
+      Baggage.join(currentPacket.baggage);
     }
-
+    
     currentPacket.writeChecksum(checksum, ckoff, cklen);
     currentPacket.writeData(b, offset, len);
     currentPacket.incNumChunks();
@@ -1890,6 +1939,9 @@ public class DFSOutputStream extends FSOutputSummer
         bytesCurBlock = 0;
         lastFlushOffset = 0;
       }
+    } else {
+      /* Baggage: fork current baggage, save to packet */
+      { currentPacket.baggage = Baggage.fork(); }
     }
   }
 
@@ -2142,6 +2194,7 @@ public class DFSOutputStream extends FSOutputSummer
           while (!isClosed()) {
             checkClosed();
             if (lastAckedSeqno >= seqno) {
+              Baggage.join(lastAckedBaggage);
               break;
             }
             try {
@@ -2261,6 +2314,9 @@ public class DFSOutputStream extends FSOutputSummer
         // send an empty packet to mark the end of the block
         currentPacket = createPacket(0, 0, bytesCurBlock, currentSeqno++, true);
         currentPacket.setSyncBlock(shouldSyncBlock);
+        
+        /* Baggage: fork into current packet */
+        { currentPacket.baggage = Baggage.fork(); }
       }
 
       flushInternal();             // flush all data to Datanodes
