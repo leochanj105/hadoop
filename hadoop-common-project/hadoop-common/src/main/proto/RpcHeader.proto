@@ -80,6 +80,7 @@ message RpcRequestHeaderProto { // the header for the RpcRequest
   // retry count, 1 means this is the first retry
   optional sint32 retryCount = 5 [default = -1];
   optional RPCTraceInfoProto traceInfo = 6; // tracing info
+  optional bytes baggage = 7; // End-to-end baggage for this request
 }
 
 
@@ -145,6 +146,7 @@ message RpcResponseHeaderProto {
   optional RpcErrorCodeProto errorDetail = 6; // in case of error
   optional bytes clientId = 7; // Globally unique client ID
   optional sint32 retryCount = 8 [default = -1];
+  optional bytes baggage = 9; // End-to-end baggage for this request
 }
 
 message RpcSaslProto {
