@@ -544,6 +544,7 @@ public abstract class Server {
       this.rpcKind = kind;
       this.clientId = clientId;
       this.traceSpan = span;
+      this.baggage = Baggage.fork();
     }
     
     @Override

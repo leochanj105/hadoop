@@ -33,6 +33,8 @@ import org.apache.hadoop.util.Daemon;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import edu.brown.cs.systems.baggage.Baggage;
+
 /**
  * Server used for receiving/sending a block of data.
  * This is created to listen for requests from clients or 
@@ -171,6 +173,8 @@ class DataXceiverServer implements Runnable {
         LOG.error(datanode.getDisplayName()
             + ":DataXceiverServer: Exiting due to: ", te);
         datanode.shouldRun = false;
+      } finally {
+        Baggage.discard();
       }
     }
 

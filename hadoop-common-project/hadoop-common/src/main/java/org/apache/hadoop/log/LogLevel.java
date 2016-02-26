@@ -25,6 +25,9 @@ import javax.servlet.*;
 import javax.servlet.http.*;
 
 import com.google.common.base.Charsets;
+
+import edu.brown.cs.systems.xtrace.wrappers.CommonsLogWrapper;
+
 import org.apache.commons.logging.*;
 import org.apache.commons.logging.impl.*;
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -113,6 +116,10 @@ public class LogLevel {
             + "Log Class: <b>" + log.getClass().getName() +"</b><br />");
         if (level != null) {
           out.println(MARKER + "Submitted Level: <b>" + level + "</b><br />");
+        }
+        
+        if (log instanceof CommonsLogWrapper) {
+          log = ((CommonsLogWrapper) log).log;
         }
 
         if (log instanceof Log4JLogger) {

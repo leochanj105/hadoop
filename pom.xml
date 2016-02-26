@@ -86,6 +86,11 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     </dependency>
     <dependency>
       <groupId>edu.brown.cs.systems</groupId>
+      <artifactId>pivottracing-aspects</artifactId>
+      <version>${tracingplane.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>edu.brown.cs.systems</groupId>
       <artifactId>retro-aspects</artifactId>
       <version>${tracingplane.version}</version>
     </dependency>
@@ -276,6 +281,10 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
             <aspectLibrary>
               <groupId>edu.brown.cs.systems</groupId>
               <artifactId>retro-aspects</artifactId>
+            </aspectLibrary>
+            <aspectLibrary>
+              <groupId>edu.brown.cs.systems</groupId>
+              <artifactId>pivottracing-aspects</artifactId>
             </aspectLibrary>
           </aspectLibraries>
         </configuration>
