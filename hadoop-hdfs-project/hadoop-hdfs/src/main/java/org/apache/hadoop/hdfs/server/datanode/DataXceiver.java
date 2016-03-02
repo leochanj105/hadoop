@@ -93,11 +93,13 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.tracing.aspects.Annotations.BaggageInheritanceDisabled;
 
 
 /**
  * Thread for processing incoming/outgoing data stream.
  */
+@BaggageInheritanceDisabled
 class DataXceiver extends Receiver implements Runnable {
   public static final Log LOG = DataNode.LOG;
   static final Log ClientTraceLog = DataNode.ClientTraceLog;

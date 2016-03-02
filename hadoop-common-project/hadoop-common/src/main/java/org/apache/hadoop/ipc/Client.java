@@ -1131,10 +1131,11 @@ public class Client {
           Writable value = ReflectionUtils.newInstance(valueClass, conf);
           value.readFields(in);                 // read value
           calls.remove(callId);
-          call.setRpcResponse(value);
           
-          /* Baggage: detach and save baggage with the call */
+          /* Baggage: detach and save baggage with the call before notifying caller */
           { call.baggage = Baggage.stop(); }
+          
+          call.setRpcResponse(value);
           
           // verify that length was correct
           // only for ProtobufEngine where len can be verified easily

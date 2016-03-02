@@ -20,6 +20,8 @@ package org.apache.hadoop.util;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import edu.brown.cs.systems.tracing.aspects.Annotations.BaggageInheritanceDisabled;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -43,23 +45,24 @@ public class ShutdownHookManager {
 
   private static final Log LOG = LogFactory.getLog(ShutdownHookManager.class);
 
-  static {
-    Runtime.getRuntime().addShutdownHook(
-      new Thread() {
-        @Override
-        public void run() {
-          MGR.shutdownInProgress.set(true);
-          for (Runnable hook: MGR.getShutdownHooksInOrder()) {
-            try {
-              hook.run();
-            } catch (Throwable ex) {
-              LOG.warn("ShutdownHook '" + hook.getClass().getSimpleName() +
-                       "' failed, " + ex.toString(), ex);
-            }
-          }
+  @BaggageInheritanceDisabled
+  private static class ShutdownHookThread extends Thread {
+    @Override
+    public void run() {
+      MGR.shutdownInProgress.set(true);
+      for (Runnable hook: MGR.getShutdownHooksInOrder()) {
+        try {
+          hook.run();
+        } catch (Throwable ex) {
+          LOG.warn("ShutdownHook '" + hook.getClass().getSimpleName() +
+                   "' failed, " + ex.toString(), ex);
         }
-      }
-    );
+      }      
+    }
+  }
+  
+  static {
+    Runtime.getRuntime().addShutdownHook(new ShutdownHookThread());
   }
 
   /**
