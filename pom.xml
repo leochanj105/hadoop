@@ -300,7 +300,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
               <Xjoinpoints>synchronization</Xjoinpoints>
               <showWeaveInfo>false</showWeaveInfo>
               <verbose>false</verbose>
-              <Xlint>adviceDidNotMatch=ignore,typeNotExposedToWeaver=ignore,uncheckedAdviceConversion=ignore,invalidAbsoluteTypeName=ignore</Xlint>
+              <Xlint>unmatchedSuperTypeInCall=ignore,adviceDidNotMatch=ignore,typeNotExposedToWeaver=ignore,uncheckedAdviceConversion=ignore,invalidAbsoluteTypeName=ignore</Xlint>
             </configuration>
           </execution>
         </executions>
