@@ -989,9 +989,11 @@ public abstract class Server {
           // Extract the first call
           //
           call = responseQueue.removeFirst();
-          
+
           /* Attach the call's baggage */
-          { Baggage.start(call.baggage); }
+          if (!inHandler) {
+            Baggage.start(call.baggage); 
+          }
           
           SocketChannel channel = call.connection.channel;
           if (LOG.isDebugEnabled()) {
@@ -1023,9 +1025,6 @@ public abstract class Server {
             // insert in Selector queue. 
             //
             
-            /* Baggage: detach baggage and save it with the call */
-            { call.baggage = Baggage.stop(); }
-            
             call.connection.responseQueue.addFirst(call);
             
             if (inHandler) {
@@ -1051,6 +1050,9 @@ public abstract class Server {
             }
           }
           error = false;              // everything went off well
+          
+          /* Baggage: detach baggage and save it with the call */
+          { call.baggage = Baggage.stop(); }
         }
       } finally {
         if (error && call != null) {
@@ -2167,6 +2169,7 @@ public abstract class Server {
             if (callQueueInstrumentation != null) {
               callQueueInstrumentation.finished(call.enqueue, call.dequeue, call.complete);
             }
+            Baggage.discard();
           }
           
         } catch (InterruptedException e) {
@@ -2439,9 +2442,6 @@ public abstract class Server {
       wrapWithSasl(responseBuf, call);
     }
     call.setResponse(ByteBuffer.wrap(responseBuf.toByteArray()));
-    
-    /* Baggage: Detach the current thread's baggage and save it with the call for responding */
-    { call.baggage = Baggage.stop(); }
   }
   
   /**
