@@ -486,6 +486,9 @@ public class DFSOutputStream extends FSOutputSummer
                   DFSClient.LOG.warn("Caught exception ", e);
                 }
               }
+              
+              /* Baggage: join with acked packet */
+              { Baggage.join(lastAckedBaggage); }
             }
             if (streamerClosed || hasError || !dfsClient.clientRunning) {
               continue;
@@ -559,6 +562,9 @@ public class DFSOutputStream extends FSOutputSummer
             if (streamerClosed || hasError || !dfsClient.clientRunning) {
               continue;
             }
+            
+            /* Baggage: join with acked packet */
+            { Baggage.join(lastAckedBaggage); }
 
             endBlock();
           }
@@ -2204,6 +2210,8 @@ public class DFSOutputStream extends FSOutputSummer
               throw new InterruptedIOException(
                   "Interrupted while waiting for data to be acknowledged by pipeline");
             }
+
+            Baggage.join(lastAckedBaggage);
           }
         }
         checkClosed();

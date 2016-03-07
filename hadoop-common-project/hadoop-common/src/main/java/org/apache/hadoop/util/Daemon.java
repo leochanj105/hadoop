@@ -23,6 +23,8 @@ import java.util.concurrent.ThreadFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 
+import edu.brown.cs.systems.tracing.aspects.Annotations.BaggageInheritanceDisabled;
+
 /** A thread that has called {@link Thread#setDaemon(boolean) } with true.*/
 @InterfaceAudience.LimitedPrivate({"HDFS", "MapReduce"})
 @InterfaceStability.Unstable
