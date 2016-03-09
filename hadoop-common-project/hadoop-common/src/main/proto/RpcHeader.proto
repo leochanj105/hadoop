@@ -171,4 +171,5 @@ message RpcSaslProto {
   required SaslState state = 2;
   optional bytes token     = 3;
   repeated SaslAuth auths  = 4;
+  optional bytes baggage   = 5;
 }

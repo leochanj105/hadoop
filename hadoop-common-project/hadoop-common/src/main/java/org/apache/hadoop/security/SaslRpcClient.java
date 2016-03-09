@@ -44,8 +44,8 @@ import javax.security.auth.kerberos.KerberosPrincipal;
 import javax.security.sasl.RealmCallback;
 import javax.security.sasl.RealmChoiceCallback;
 import javax.security.sasl.Sasl;
-import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslClient;
+import javax.security.sasl.SaslException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -92,10 +92,6 @@ public class SaslRpcClient {
   private SaslPropertiesResolver saslPropsResolver;
   private AuthMethod authMethod;
   
-  private static final RpcRequestHeaderProto saslHeader = ProtoUtil
-      .makeRpcRequestHeader(RpcKind.RPC_PROTOCOL_BUFFER,
-          OperationProto.RPC_FINAL_PACKET, AuthProtocol.SASL.callId,
-          RpcConstants.INVALID_RETRY_COUNT, RpcConstants.DUMMY_CLIENT_ID);
   private static final RpcSaslProto negotiateRequest =
       RpcSaslProto.newBuilder().setState(SaslState.NEGOTIATE).build();
   
@@ -456,6 +452,9 @@ public class SaslRpcClient {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Sending sasl message "+message);
     }
+    RpcRequestHeaderProto saslHeader = ProtoUtil.makeRpcRequestHeader(RpcKind.RPC_PROTOCOL_BUFFER,
+        OperationProto.RPC_FINAL_PACKET, AuthProtocol.SASL.callId,
+        RpcConstants.INVALID_RETRY_COUNT, RpcConstants.DUMMY_CLIENT_ID);
     RpcRequestMessageWrapper request =
         new RpcRequestMessageWrapper(saslHeader, message);
     out.writeInt(request.getLength());
@@ -633,6 +632,9 @@ public class SaslRpcClient {
           .setState(SaslState.WRAP)
           .setToken(ByteString.copyFrom(buf, 0, buf.length))
           .build();
+      RpcRequestHeaderProto saslHeader = ProtoUtil.makeRpcRequestHeader(RpcKind.RPC_PROTOCOL_BUFFER,
+          OperationProto.RPC_FINAL_PACKET, AuthProtocol.SASL.callId,
+          RpcConstants.INVALID_RETRY_COUNT, RpcConstants.DUMMY_CLIENT_ID);
       RpcRequestMessageWrapper request =
           new RpcRequestMessageWrapper(saslHeader, saslMessage);
       DataOutputStream dob = new DataOutputStream(out);

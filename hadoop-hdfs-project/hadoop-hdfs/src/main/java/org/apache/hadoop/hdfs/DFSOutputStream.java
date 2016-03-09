@@ -488,7 +488,7 @@ public class DFSOutputStream extends FSOutputSummer
               }
               
               /* Baggage: join with acked packet */
-              { Baggage.join(lastAckedBaggage); }
+              Baggage.join(lastAckedBaggage);
             }
             if (streamerClosed || hasError || !dfsClient.clientRunning) {
               continue;
@@ -504,8 +504,8 @@ public class DFSOutputStream extends FSOutputSummer
               span = scope.detach();
               one.setTraceSpan(span);
               
-              /* Baggage: fork current baggage into packet */
-              { one.baggage = Baggage.fork(); }
+//              /* Baggage: fork current baggage into packet */
+//              { one.baggage = Baggage.fork(); }
               
               dataQueue.removeFirst();
               ackQueue.addLast(one);
@@ -535,8 +535,8 @@ public class DFSOutputStream extends FSOutputSummer
           } finally {
             writeScope.close();
             
-            /* Baggage: fork current baggage into packet */
-            { one.baggage = Baggage.fork(); }
+//            /* Baggage: fork current baggage into packet */
+//            { one.baggage = Baggage.fork(); }
           }
           lastPacket = Time.monotonicNow();
           
@@ -807,8 +807,8 @@ public class DFSOutputStream extends FSOutputSummer
               one = ackQueue.getFirst();
             }
             
-            /* Baggage: hook back up with the baggage of the packet waiting to be acked */
-            { Baggage.join(one.baggage); }
+//            /* Baggage: hook back up with the baggage of the packet waiting to be acked */
+//            { Baggage.join(one.baggage); }
             
             if (one.getSeqno() != seqno) {
               throw new IOException("ResponseProcessor: Expecting seqno " +
@@ -833,7 +833,7 @@ public class DFSOutputStream extends FSOutputSummer
               scope = Trace.continueSpan(one.getTraceSpan());
               one.setTraceSpan(null);
               lastAckedSeqno = seqno;
-              lastAckedBaggage = DetachedBaggage.merge(lastAckedBaggage, Baggage.fork());
+              lastAckedBaggage = Baggage.fork();
               ackQueue.removeFirst();
               dataQueue.notifyAll();
 
@@ -1840,16 +1840,14 @@ public class DFSOutputStream extends FSOutputSummer
               Thread.currentThread().interrupt();
               break;
             }
-            
-            /* Baggage: had to wait for some acks; join their baggage once they arrive */
-            if (dataQueue.size() + ackQueue.size() > dfsClient.getConf().writeMaxPackets) {
-              Baggage.join(lastAckedBaggage);
-            }
           }
         } finally {
           Span span = Trace.currentSpan();
           if ((span != null) && (!firstWait)) {
             span.addTimelineAnnotation("end.wait");
+          }
+          if (!firstWait) {
+            Baggage.join(lastAckedBaggage);
           }
         }
         checkClosed();
@@ -1898,9 +1896,9 @@ public class DFSOutputStream extends FSOutputSummer
             ", chunksPerPacket=" + chunksPerPacket +
             ", bytesCurBlock=" + bytesCurBlock);
       }
-    } else {
-      /* Baggage: Join up with previous baggage that wrote to this packet */
-      Baggage.join(currentPacket.baggage);
+//    } else {
+//      /* Baggage: Join up with previous baggage that wrote to this packet */
+//      Baggage.join(currentPacket.baggage);
     }
     
     currentPacket.writeChecksum(checksum, ckoff, cklen);
@@ -1945,9 +1943,9 @@ public class DFSOutputStream extends FSOutputSummer
         bytesCurBlock = 0;
         lastFlushOffset = 0;
       }
-    } else {
-      /* Baggage: fork current baggage, save to packet */
-      { currentPacket.baggage = Baggage.fork(); }
+//    } else {
+//      /* Baggage: fork current baggage, save to packet */
+//      { currentPacket.baggage = Baggage.fork(); }
     }
   }
 
@@ -2197,10 +2195,13 @@ public class DFSOutputStream extends FSOutputSummer
       long begin = Time.monotonicNow();
       try {
         synchronized (dataQueue) {
+          boolean first = true;
           while (!isClosed()) {
             checkClosed();
             if (lastAckedSeqno >= seqno) {
-              Baggage.join(lastAckedBaggage);
+              if (first) {
+                Baggage.join(lastAckedBaggage);
+              }
               break;
             }
             try {
@@ -2210,7 +2211,7 @@ public class DFSOutputStream extends FSOutputSummer
               throw new InterruptedIOException(
                   "Interrupted while waiting for data to be acknowledged by pipeline");
             }
-
+            first = false;
             Baggage.join(lastAckedBaggage);
           }
         }
