@@ -52,6 +52,9 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.baggage.DetachedBaggage.StringEncoding;
+
 class Fetcher<K,V> extends Thread {
   
   private static final Log LOG = LogFactory.getLog(Fetcher.class);
@@ -462,6 +465,8 @@ class Fetcher<K,V> extends Thread {
         ShuffleHeader.DEFAULT_HTTP_HEADER_NAME);
     connection.addRequestProperty(ShuffleHeader.HTTP_HEADER_VERSION,
         ShuffleHeader.DEFAULT_HTTP_HEADER_VERSION);
+    // Add baggage
+    connection.addRequestProperty("Baggage", Baggage.fork().toString(StringEncoding.BASE16));
   }
   
   private static TaskAttemptID[] EMPTY_ATTEMPT_ID_ARRAY = new TaskAttemptID[0];

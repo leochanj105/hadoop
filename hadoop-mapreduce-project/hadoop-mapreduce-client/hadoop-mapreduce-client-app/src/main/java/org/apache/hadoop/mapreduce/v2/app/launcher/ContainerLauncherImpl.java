@@ -58,9 +58,12 @@ import org.apache.hadoop.yarn.exceptions.YarnRuntimeException;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
+import edu.brown.cs.systems.tracing.aspects.Annotations.InstrumentQueues;
+
 /**
  * This class is responsible for launching of containers.
  */
+@InstrumentQueues /** Baggage: pass baggage through queues in this class */
 public class ContainerLauncherImpl extends AbstractService implements
     ContainerLauncher {
 

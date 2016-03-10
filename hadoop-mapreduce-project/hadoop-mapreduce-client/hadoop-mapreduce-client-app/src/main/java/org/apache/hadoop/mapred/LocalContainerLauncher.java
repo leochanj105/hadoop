@@ -30,8 +30,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FSError;
@@ -63,13 +61,17 @@ import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment;
 import org.apache.hadoop.yarn.exceptions.YarnRuntimeException;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
+import edu.brown.cs.systems.tracing.aspects.Annotations.InstrumentQueues;
 
 /**
  * Runs the container task locally in a thread.
  * Since all (sub)tasks share the same local directory, they must be executed
  * sequentially in order to avoid creating/deleting the same files/dirs.
  */
+@InstrumentQueues /** Retro: instrument queues in this class */
 public class LocalContainerLauncher extends AbstractService implements
     ContainerLauncher {
 

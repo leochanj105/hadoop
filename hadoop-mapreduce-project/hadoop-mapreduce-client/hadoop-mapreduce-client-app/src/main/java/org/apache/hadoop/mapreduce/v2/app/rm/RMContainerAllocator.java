@@ -86,9 +86,12 @@ import org.apache.hadoop.yarn.util.resource.Resources;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import edu.brown.cs.systems.tracing.aspects.Annotations.InstrumentQueues;
+
 /**
  * Allocates the container from the ResourceManager scheduler.
  */
+@InstrumentQueues /** Retro: instrument queues in this class */
 public class RMContainerAllocator extends RMContainerRequestor
     implements ContainerAllocator {
 

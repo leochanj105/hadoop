@@ -27,6 +27,8 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableUtils;
 
+import edu.brown.cs.systems.baggage.Baggage;
+
 /**
  * Shuffle Header information that is sent by the TaskTracker and 
  * deciphered by the Fetcher thread of Reduce task
@@ -67,6 +69,7 @@ public class ShuffleHeader implements Writable {
     compressedLength = WritableUtils.readVLong(in);
     uncompressedLength = WritableUtils.readVLong(in);
     forReduce = WritableUtils.readVInt(in);
+    Baggage.join(WritableUtils.readCompressedByteArray(in));
   }
 
   public void write(DataOutput out) throws IOException {
@@ -74,5 +77,6 @@ public class ShuffleHeader implements Writable {
     WritableUtils.writeVLong(out, compressedLength);
     WritableUtils.writeVLong(out, uncompressedLength);
     WritableUtils.writeVInt(out, forReduce);
+    WritableUtils.writeCompressedByteArray(out, Baggage.fork().toByteArray());
   }
 }

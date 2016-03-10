@@ -53,6 +53,9 @@ import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.baggage.DetachedBaggage;
+
 
 /**
  * Keeps the data structures to send container requests to RM.
@@ -83,6 +86,7 @@ public abstract class RMContainerRequestor extends RMCommunicator {
   private final Set<ResourceRequest> ask = new TreeSet<ResourceRequest>(
       RESOURCE_REQUEST_COMPARATOR);
   private final Set<ContainerId> release = new TreeSet<ContainerId>();
+  private volatile DetachedBaggage baggage = null;
   // pendingRelease holds history or release requests.request is removed only if
   // RM sends completedContainer.
   // How it different from release? --> release is for per allocate() request.
@@ -196,6 +200,7 @@ public abstract class RMContainerRequestor extends RMCommunicator {
         AllocateRequest.newInstance(lastResponseID,
           super.getApplicationProgress(), new ArrayList<ResourceRequest>(ask),
           new ArrayList<ContainerId>(release), blacklistRequest);
+    Baggage.join(baggage);
     AllocateResponse allocateResponse = scheduler.allocate(allocateRequest);
     lastResponseID = allocateResponse.getResponseId();
     availableResources = allocateResponse.getAvailableResources();
@@ -215,6 +220,7 @@ public abstract class RMContainerRequestor extends RMCommunicator {
 
     ask.clear();
     release.clear();
+    baggage = null;
 
     if (numCompletedContainers > 0) {
       // re-send limited requests when a container completes to trigger asking
@@ -260,6 +266,7 @@ public abstract class RMContainerRequestor extends RMCommunicator {
       }
     }
     requestLimitsToUpdate.clear();
+    baggage = DetachedBaggage.merge(baggage, Baggage.fork());
   }
 
   protected void addOutstandingRequestOnResync() {
@@ -367,6 +374,7 @@ public abstract class RMContainerRequestor extends RMCommunicator {
           if (foundAll) {
             remoteRequests.remove(hostName);
           }
+          baggage = DetachedBaggage.merge(baggage, Baggage.fork());
         }
         // TODO handling of rack blacklisting
         // Removing from rack should be dependent on no. of failures within the rack 
@@ -511,10 +519,12 @@ public abstract class RMContainerRequestor extends RMCommunicator {
     // numContainers. So existing values must be replaced explicitly
     ask.remove(remoteRequest);
     ask.add(remoteRequest);    
+    baggage = DetachedBaggage.merge(baggage, Baggage.fork());
   }
 
   protected void release(ContainerId containerId) {
     release.add(containerId);
+    baggage = DetachedBaggage.merge(baggage, Baggage.fork());
   }
   
   protected boolean isNodeBlacklisted(String hostname) {

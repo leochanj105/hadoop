@@ -23,9 +23,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+
+import edu.brown.cs.systems.tracing.aspects.Annotations.InstrumentQueues;
+import edu.brown.cs.systems.tracing.aspects.Annotations.InstrumentedQueueElement;
 
 class CleanupQueue {
 
@@ -53,6 +55,7 @@ class CleanupQueue {
   /**
    * Contains info related to the path of the file/dir to be deleted
    */
+  @InstrumentedQueueElement /** Baggage: propagate baggage with this class */
   static class PathDeletionContext {
     String fullPath;// full path of file or dir
     FileSystem fs;
@@ -100,6 +103,7 @@ class CleanupQueue {
     return (cleanupThread.queue.size() == 0);
   }
 
+  @InstrumentQueues /** Baggage: pass baggage through queues in this class */
   private static class PathCleanupThread extends Thread {
 
     // cleanup queue which deletes files/directories of the paths queued up.

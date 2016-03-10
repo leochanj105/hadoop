@@ -56,6 +56,7 @@ import org.apache.hadoop.io.serializer.Serializer;
 import org.apache.hadoop.mapred.IFile.Writer;
 import org.apache.hadoop.mapred.Merger.Segment;
 import org.apache.hadoop.mapred.SortedRanges.SkipRangeIterator;
+import org.apache.hadoop.mapreduce.CryptoUtils;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
@@ -66,7 +67,6 @@ import org.apache.hadoop.mapreduce.lib.map.WrappedMapper;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormatCounter;
 import org.apache.hadoop.mapreduce.split.JobSplit.TaskSplitIndex;
 import org.apache.hadoop.mapreduce.task.MapContextImpl;
-import org.apache.hadoop.mapreduce.CryptoUtils;
 import org.apache.hadoop.util.IndexedSortable;
 import org.apache.hadoop.util.IndexedSorter;
 import org.apache.hadoop.util.Progress;
@@ -74,6 +74,9 @@ import org.apache.hadoop.util.QuickSort;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.StringInterner;
 import org.apache.hadoop.util.StringUtils;
+
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.baggage.DetachedBaggage;
 
 /** A Map task. */
 @InterfaceAudience.LimitedPrivate({"MapReduce"})
@@ -927,6 +930,7 @@ public class MapTask extends Task {
     final ReentrantLock spillLock = new ReentrantLock();
     final Condition spillDone = spillLock.newCondition();
     final Condition spillReady = spillLock.newCondition();
+    private volatile DetachedBaggage spillDoneBaggage, spillReadyBaggage;
     final BlockingBuffer bb = new BlockingBuffer();
     volatile boolean spillThreadRunning = false;
     final SpillThread spillThread = new SpillThread();
@@ -1431,6 +1435,7 @@ public class MapTask extends Task {
                   while (spillInProgress) {
                     reporter.progress();
                     spillDone.await();
+                    Baggage.join(spillDoneBaggage);
                   }
                 } catch (InterruptedException e) {
                     throw new IOException(
@@ -1464,9 +1469,14 @@ public class MapTask extends Task {
       }
       spillLock.lock();
       try {
+        boolean waited = false;
         while (spillInProgress) {
           reporter.progress();
           spillDone.await();
+          waited = true;
+        }
+        if (waited) {
+          Baggage.join(spillDoneBaggage);
         }
         checkSpillException();
 
@@ -1524,8 +1534,13 @@ public class MapTask extends Task {
         try {
           while (true) {
             spillDone.signal();
+            boolean waited = false;
             while (!spillInProgress) {
               spillReady.await();
+              waited = true;
+            }
+            if (waited) {
+              Baggage.start(spillReadyBaggage);
             }
             try {
               spillLock.unlock();
@@ -1540,6 +1555,7 @@ public class MapTask extends Task {
               kvstart = kvend;
               bufstart = bufend;
               spillInProgress = false;
+              spillDoneBaggage = Baggage.stop();
             }
           }
         } catch (InterruptedException e) {
@@ -1575,6 +1591,7 @@ public class MapTask extends Task {
                "); kvend = " + kvend + "(" + (kvend * 4) +
                "); length = " + (distanceTo(kvend, kvstart,
                      kvmeta.capacity()) + 1) + "/" + maxRec);
+      spillReadyBaggage = Baggage.fork();
       spillReady.signal();
     }
 

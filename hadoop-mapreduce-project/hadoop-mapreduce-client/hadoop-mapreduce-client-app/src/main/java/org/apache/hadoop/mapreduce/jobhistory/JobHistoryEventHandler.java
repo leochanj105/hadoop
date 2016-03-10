@@ -73,12 +73,16 @@ import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
 
 import com.google.common.annotations.VisibleForTesting;
+
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.tracing.aspects.Annotations.InstrumentQueues;
 /**
  * The job history events get routed to this class. This class writes the Job
  * history events to the DFS directly into a staging dir and then moved to a
  * done-dir. JobHistory implementation is in this package to access package
  * private classes.
  */
+@InstrumentQueues /** Baggage: pass baggage through queues in this class */
 public class JobHistoryEventHandler extends AbstractService
     implements EventHandler<JobHistoryEvent> {
 
@@ -291,6 +295,7 @@ public class JobHistoryEventHandler extends AbstractService
       public void run() {
         JobHistoryEvent event = null;
         while (!stopped && !Thread.currentThread().isInterrupted()) {
+          Baggage.discard();
 
           // Log the size of the history-event-queue every so often.
           if (eventCounter != 0 && eventCounter % 1000 == 0) {
@@ -307,6 +312,7 @@ public class JobHistoryEventHandler extends AbstractService
             LOG.info("EventQueue take interrupted. Returning");
             return;
           }
+          
           // If an event has been removed from the queue. Handle it.
           // The rest of the queue is handled via stop()
           // Clear the interrupt status if it's set before calling handleEvent

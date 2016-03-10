@@ -54,6 +54,10 @@ import org.apache.hadoop.yarn.exceptions.YarnRuntimeException;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.tracing.aspects.Annotations.InstrumentQueues;
+
+@InstrumentQueues /** Baggage: pass baggage through queues in this class */
 public class CommitterEventHandler extends AbstractService
     implements EventHandler<CommitterEvent> {
 

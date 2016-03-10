@@ -134,6 +134,10 @@ import com.google.common.base.Charsets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.protobuf.ByteString;
 
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.baggage.DetachedBaggage;
+import edu.brown.cs.systems.baggage.DetachedBaggage.StringEncoding;
+
 public class ShuffleHandler extends AuxiliaryService {
 
   private static final Log LOG = LogFactory.getLog(ShuffleHandler.class);
@@ -825,6 +829,9 @@ public class ShuffleHandler extends AuxiliaryService {
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent evt)
         throws Exception {
       HttpRequest request = (HttpRequest) evt.getMessage();
+      Baggage.start(DetachedBaggage.decode(request.getHeader("Baggage"), StringEncoding.BASE16));
+      try {
+      
       if (request.getMethod() != GET) {
           sendError(ctx, METHOD_NOT_ALLOWED);
           return;
@@ -914,6 +921,7 @@ public class ShuffleHandler extends AuxiliaryService {
         sendError(ctx,errorMessage , INTERNAL_SERVER_ERROR);
         return;
       }
+      response.addHeader("Baggage", Baggage.fork().toString(StringEncoding.BASE16));
       ch.write(response);
       //Initialize one ReduceContext object per messageReceived call
       ReduceContext reduceContext = new ReduceContext(mapIds, reduceId, ctx,
@@ -923,6 +931,9 @@ public class ShuffleHandler extends AuxiliaryService {
         if(nextMap == null) {
           return;
         }
+      }
+      } finally {
+        Baggage.discard();
       }
     }
 
@@ -1173,6 +1184,8 @@ public class ShuffleHandler extends AuxiliaryService {
       response.setContent(
         ChannelBuffers.copiedBuffer(message, CharsetUtil.UTF_8));
 
+      response.addHeader("Baggage", Baggage.fork().toString(StringEncoding.BASE16));
+      
       // Close the connection as soon as the error message is sent.
       ctx.getChannel().write(response).addListener(ChannelFutureListener.CLOSE);
     }
