@@ -1847,7 +1847,7 @@ public class DFSOutputStream extends FSOutputSummer
             span.addTimelineAnnotation("end.wait");
           }
           if (!firstWait) {
-            Baggage.join(lastAckedBaggage);
+            Baggage.join(DetachedBaggage.split(lastAckedBaggage));
           }
         }
         checkClosed();
