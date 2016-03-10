@@ -118,6 +118,8 @@ import org.apache.hadoop.yarn.util.resource.Resources;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
+import edu.brown.cs.systems.baggage.Baggage;
+
 @LimitedPrivate("yarn")
 @Evolving
 @SuppressWarnings("unchecked")
@@ -935,6 +937,9 @@ public class CapacityScheduler extends
   public Allocation allocate(ApplicationAttemptId applicationAttemptId,
       List<ResourceRequest> ask, List<ContainerId> release, 
       List<String> blacklistAdditions, List<String> blacklistRemovals) {
+    /* Operating on the application, attach its baggage */
+    joinBaggage(applicationAttemptId);
+    try {
 
     FiCaSchedulerApp application = getApplicationAttempt(applicationAttemptId);
     if (application == null) {
@@ -987,6 +992,11 @@ public class CapacityScheduler extends
 
       return application.getAllocation(getResourceCalculator(),
                    clusterResource, getMinimumResourceCapability());
+    }
+    
+    } finally {
+      /* Give the baggage back to the application attempt */
+      saveBaggage(applicationAttemptId);
     }
   }
 
@@ -1749,4 +1759,16 @@ public class CapacityScheduler extends
     }
     return ret;
   }
+  
+  @Override
+  public void startBaggage(FiCaSchedulerApp app) {
+    startBaggage(app.getApplicationId());
+  }
+
+  
+  @Override
+  public void stopBaggage(FiCaSchedulerApp app) {
+    stopBaggage(app.getApplicationId());
+  }
+  
 }

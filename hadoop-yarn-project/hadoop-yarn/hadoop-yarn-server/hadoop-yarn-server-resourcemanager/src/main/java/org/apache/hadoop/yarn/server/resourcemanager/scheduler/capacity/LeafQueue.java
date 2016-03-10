@@ -762,8 +762,13 @@ public class LeafQueue extends AbstractCSQueue {
       FiCaSchedulerApp application = 
           getApplication(reservedContainer.getApplicationAttemptId());
       synchronized (application) {
-        return assignReservedContainer(application, node, reservedContainer,
-            clusterResource);
+        scheduler.startBaggage(application);
+        try {
+          return assignReservedContainer(application, node, reservedContainer,
+              clusterResource);
+        } finally {
+          scheduler.stopBaggage(application);
+        }
       }
     }
     
@@ -777,6 +782,9 @@ public class LeafQueue extends AbstractCSQueue {
       }
 
       synchronized (application) {
+        scheduler.startBaggage(application);
+        try {
+        
         // Check if this resource is on the blacklist
         if (SchedulerAppUtils.isBlacklisted(application, node, LOG)) {
           continue;
@@ -872,6 +880,10 @@ public class LeafQueue extends AbstractCSQueue {
             // Do not assign out of order w.r.t priorities
             break;
           }
+        }
+          
+        } finally {
+          scheduler.stopBaggage(application);
         }
       }
 

@@ -61,4 +61,8 @@ public interface CapacitySchedulerContext {
   Comparator<CSQueue> getQueueComparator();
   
   FiCaSchedulerNode getNode(NodeId nodeId);
+
+  void startBaggage(FiCaSchedulerApp app);
+
+  void stopBaggage(FiCaSchedulerApp app);
 }
