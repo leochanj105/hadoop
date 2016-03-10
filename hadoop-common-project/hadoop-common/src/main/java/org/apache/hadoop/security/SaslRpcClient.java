@@ -75,6 +75,8 @@ import org.apache.hadoop.util.ProtoUtil;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
+
+import edu.brown.cs.systems.baggage.Baggage;
 /**
  * A utility class that encapsulates SASL logic for RPC client
  */
@@ -365,6 +367,7 @@ public class SaslRpcClient {
           new RpcResponseMessageWrapper();
       responseWrapper.readFields(inStream);
       RpcResponseHeaderProto header = responseWrapper.getMessageHeader();
+      Baggage.join(header.getBaggage());
       switch (header.getStatus()) {
         case ERROR: // might get a RPC error during 
         case FATAL:

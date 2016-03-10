@@ -100,6 +100,8 @@ import edu.brown.cs.systems.baggage.Baggage;
 import edu.brown.cs.systems.baggage.DetachedBaggage;
 import edu.brown.cs.systems.retro.resources.Network;
 import edu.brown.cs.systems.tracing.aspects.Annotations.BaggageInheritanceDisabled;
+import edu.brown.cs.systems.xtrace.XTrace;
+import edu.brown.cs.systems.xtrace.logging.XTraceLogger;
 
 /** A client for an IPC service.  IPC calls take a single {@link Writable} as a
  * parameter, and return a {@link Writable} as their value.  A service runs on
@@ -110,6 +112,7 @@ import edu.brown.cs.systems.tracing.aspects.Annotations.BaggageInheritanceDisabl
 public class Client {
   
   public static final Log LOG = LogFactory.getLog(Client.class);
+  public static final XTraceLogger xtrace = XTrace.getLogger(Client.class);
 
   /** A counter for generating call IDs. */
   private static final AtomicInteger callIdCounter = new AtomicInteger();

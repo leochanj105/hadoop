@@ -20,8 +20,8 @@ package org.apache.hadoop.util;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Map;
@@ -35,6 +35,9 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 
 import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.tracing.aspects.Annotations.BaggageInheritanceDisabled;
+import edu.brown.cs.systems.xtrace.XTrace;
+import edu.brown.cs.systems.xtrace.logging.XTraceLogger;
 
 /** 
  * A base class for running a Unix command.
@@ -48,6 +51,7 @@ import edu.brown.cs.systems.baggage.Baggage;
 abstract public class Shell {
   
   public static final Log LOG = LogFactory.getLog(Shell.class);
+  public static final XTraceLogger xtrace = XTrace.getLogger(Shell.class);
   
   private static boolean IS_JAVA7_OR_ABOVE =
       System.getProperty("java.version").substring(0, 3).compareTo("1.7") >= 0;
@@ -457,9 +461,12 @@ abstract public class Shell {
     exitCode = 0; // reset for next run
     runCommand();
   }
+  
+  @BaggageInheritanceDisabled
+  public class NoBaggageThread extends Thread {}
 
   /** Run a command */
-  private void runCommand() throws IOException { 
+  private void runCommand() throws IOException {
     ProcessBuilder builder = new ProcessBuilder(getExecString());
     Timer timeOutTimer = null;
     ShellTimeoutTimerTask timeoutTimerTask = null;
@@ -509,7 +516,7 @@ abstract public class Shell {
     
     // read error and input streams as this would free up the buffers
     // free the error stream buffer
-    Thread errThread = new Thread() {
+    Thread errThread = new NoBaggageThread() {
       @Override
       public void run() {
         try {

@@ -132,6 +132,8 @@ import edu.brown.cs.systems.retro.resources.Network;
 import edu.brown.cs.systems.retro.resources.QueueResource;
 import edu.brown.cs.systems.tracing.Utils;
 import edu.brown.cs.systems.tracing.aspects.Annotations.BaggageInheritanceDisabled;
+import edu.brown.cs.systems.xtrace.XTrace;
+import edu.brown.cs.systems.xtrace.logging.XTraceLogger;
 
 /** An abstract IPC service.  IPC calls take a single {@link Writable} as a
  * parameter, and return a {@link Writable} as their value.  A service runs on
@@ -257,6 +259,7 @@ public abstract class Server {
   
 
   public static final Log LOG = LogFactory.getLog(Server.class);
+  public static final XTraceLogger xtrace = XTrace.getLogger(Server.class);
   public static final Log AUDITLOG = 
     LogFactory.getLog("SecurityLogger."+Server.class.getName());
   private static final String AUTH_FAILED_FOR = "Auth failed for ";

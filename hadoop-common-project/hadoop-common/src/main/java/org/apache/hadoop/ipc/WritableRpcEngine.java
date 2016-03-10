@@ -45,10 +45,14 @@ import org.apache.hadoop.conf.*;
 import org.apache.htrace.Trace;
 import org.apache.htrace.TraceScope;
 
+import edu.brown.cs.systems.xtrace.XTrace;
+import edu.brown.cs.systems.xtrace.logging.XTraceLogger;
+
 /** An RpcEngine implementation for Writable data. */
 @InterfaceStability.Evolving
 public class WritableRpcEngine implements RpcEngine {
   private static final Log LOG = LogFactory.getLog(RPC.class);
+  public static final XTraceLogger xtrace = XTrace.getLogger(WritableRpcEngine.class);
   
   //writableRpcVersion should be updated if there is a change
   //in format of the rpc messages.
@@ -213,6 +217,7 @@ public class WritableRpcEngine implements RpcEngine {
     private Client.ConnectionId remoteId;
     private Client client;
     private boolean isClosed = false;
+    private final String protocolName;
     private final AtomicBoolean fallbackToSimpleAuth;
 
     public Invoker(Class<?> protocol,
@@ -223,6 +228,7 @@ public class WritableRpcEngine implements RpcEngine {
       this.remoteId = Client.ConnectionId.getConnectionId(address, protocol,
           ticket, rpcTimeout, conf);
       this.client = CLIENTS.getClient(conf, factory);
+      this.protocolName = RPC.getProtocolName(protocol);
       this.fallbackToSimpleAuth = fallbackToSimpleAuth;
     }
 
@@ -233,6 +239,7 @@ public class WritableRpcEngine implements RpcEngine {
       if (LOG.isDebugEnabled()) {
         startTime = Time.now();
       }
+      xtrace.log("Invoking {}.{}", protocolName, method.getName());
       TraceScope traceScope = null;
       if (Trace.isTracing()) {
         traceScope = Trace.startSpan(RpcClientUtil.methodToTraceString(method));
@@ -248,6 +255,7 @@ public class WritableRpcEngine implements RpcEngine {
       if (LOG.isDebugEnabled()) {
         long callTime = Time.now() - startTime;
         LOG.debug("Call: " + method.getName() + " " + callTime);
+        xtrace.log("{}.{} completed", protocolName, method.getName());
       }
       return value.get();
     }
@@ -449,6 +457,7 @@ public class WritableRpcEngine implements RpcEngine {
 
         Invocation call = (Invocation)rpcRequest;
         if (server.verbose) log("Call: " + call);
+        xtrace.log("{} in {}", call.getMethodName(), protocolName);
 
         // Verify writable rpc version
         if (call.getRpcVersion() != writableRpcVersion) {

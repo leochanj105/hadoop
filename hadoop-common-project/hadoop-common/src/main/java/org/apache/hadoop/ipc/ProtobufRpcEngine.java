@@ -61,12 +61,16 @@ import com.google.protobuf.Message;
 import com.google.protobuf.ServiceException;
 import com.google.protobuf.TextFormat;
 
+import edu.brown.cs.systems.xtrace.XTrace;
+import edu.brown.cs.systems.xtrace.logging.XTraceLogger;
+
 /**
  * RPC Engine for for protobuf based RPCs.
  */
 @InterfaceStability.Evolving
 public class ProtobufRpcEngine implements RpcEngine {
   public static final Log LOG = LogFactory.getLog(ProtobufRpcEngine.class);
+  public static final XTraceLogger xtrace = XTrace.getLogger(ProtobufRpcEngine.class);
   
   static { // Register the rpcRequest deserializer for WritableRpcEngine 
     org.apache.hadoop.ipc.Server.registerProtocolEngine(
@@ -221,6 +225,7 @@ public class ProtobufRpcEngine implements RpcEngine {
             remoteId + ": " + method.getName() +
             " {" + TextFormat.shortDebugString((Message) args[1]) + "}");
       }
+      xtrace.log("Invoking {}.{}", protocolName, method.getName());
 
 
       Message theRequest = (Message) args[1];
@@ -240,6 +245,7 @@ public class ProtobufRpcEngine implements RpcEngine {
           traceScope.getSpan().addTimelineAnnotation(
               "Call got exception: " + e.getMessage());
         }
+        xtrace.log("{}.{} Exception: {}", protocolName, method.getName(), e.getMessage());
         throw new ServiceException(e);
       } finally {
         if (traceScope != null) traceScope.close();
@@ -266,6 +272,7 @@ public class ProtobufRpcEngine implements RpcEngine {
               remoteId + ": " + method.getName() +
                 " {" + TextFormat.shortDebugString(returnMessage) + "}");
         }
+        xtrace.log("{}.{} completed", protocolName, method.getName());
 
       } catch (Throwable e) {
         throw new ServiceException(e);
@@ -591,6 +598,7 @@ public class ProtobufRpcEngine implements RpcEngine {
         long clientVersion = rpcRequest.getClientProtocolVersion();
         if (server.verbose)
           LOG.info("Call: protocol=" + protocol + ", method=" + methodName);
+        xtrace.log("{} in {}", methodName, protocol);
         
         ProtoClassProtoImpl protocolImpl = getProtocolImpl(server, protoName,
             clientVersion);
