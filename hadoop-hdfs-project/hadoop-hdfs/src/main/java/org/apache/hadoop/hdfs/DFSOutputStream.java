@@ -2323,9 +2323,6 @@ public class DFSOutputStream extends FSOutputSummer
         // send an empty packet to mark the end of the block
         currentPacket = createPacket(0, 0, bytesCurBlock, currentSeqno++, true);
         currentPacket.setSyncBlock(shouldSyncBlock);
-        
-        /* Baggage: fork into current packet */
-        { currentPacket.baggage = Baggage.fork(); }
       }
 
       flushInternal();             // flush all data to Datanodes
