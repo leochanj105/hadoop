@@ -37,6 +37,10 @@ import org.apache.hadoop.yarn.exceptions.YarnRuntimeException;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.tracing.aspects.Annotations.BaggageInheritanceDisabled;
+import edu.brown.cs.systems.tracing.aspects.Annotations.InstrumentQueues;
+
 /**
  * Dispatches {@link Event}s in a separate thread. Currently only single thread
  * does that. Potentially there could be multiple channels for each event type
@@ -45,6 +49,7 @@ import com.google.common.annotations.VisibleForTesting;
 @SuppressWarnings("rawtypes")
 @Public
 @Evolving
+@InstrumentQueues /** Baggage: pass baggage through queues in this class */
 public class AsyncDispatcher extends AbstractService implements Dispatcher {
 
   private static final Log LOG = LogFactory.getLog(AsyncDispatcher.class);
@@ -79,38 +84,41 @@ public class AsyncDispatcher extends AbstractService implements Dispatcher {
     this.eventQueue = eventQueue;
     this.eventDispatchers = new HashMap<Class<? extends Enum>, EventHandler>();
   }
-
-  Runnable createThread() {
-    return new Runnable() {
-      @Override
-      public void run() {
-        while (!stopped && !Thread.currentThread().isInterrupted()) {
-          drained = eventQueue.isEmpty();
-          // blockNewEvents is only set when dispatcher is draining to stop,
-          // adding this check is to avoid the overhead of acquiring the lock
-          // and calling notify every time in the normal run of the loop.
-          if (blockNewEvents) {
-            synchronized (waitForDrained) {
-              if (drained) {
-                waitForDrained.notify();
-              }
+  
+  @BaggageInheritanceDisabled
+  private class AsyncDispatcherRunnable implements Runnable {
+    @Override
+    public void run() {
+      while (!stopped && !Thread.currentThread().isInterrupted()) {
+        drained = eventQueue.isEmpty();
+        // blockNewEvents is only set when dispatcher is draining to stop,
+        // adding this check is to avoid the overhead of acquiring the lock
+        // and calling notify every time in the normal run of the loop.
+        if (blockNewEvents) {
+          synchronized (waitForDrained) {
+            if (drained) {
+              waitForDrained.notify();
             }
-          }
-          Event event;
-          try {
-            event = eventQueue.take();
-          } catch(InterruptedException ie) {
-            if (!stopped) {
-              LOG.warn("AsyncDispatcher thread interrupted", ie);
-            }
-            return;
-          }
-          if (event != null) {
-            dispatch(event);
           }
         }
+        Event event;
+        try {
+          event = eventQueue.take();
+        } catch(InterruptedException ie) {
+          if (!stopped) {
+            LOG.warn("AsyncDispatcher thread interrupted", ie);
+          }
+          return;
+        }
+        if (event != null) {
+          dispatch(event);
+        }
       }
-    };
+    }    
+  }
+
+  Runnable createThread() {
+    return new AsyncDispatcherRunnable();
   }
 
   @Override
@@ -291,6 +299,7 @@ public class AsyncDispatcher extends AbstractService implements Dispatcher {
       @Override
       public void run() {
         LOG.info("Exiting, bbye..");
+        // TODO: baggage -- give back to parent process?
         System.exit(-1);
       }
     };

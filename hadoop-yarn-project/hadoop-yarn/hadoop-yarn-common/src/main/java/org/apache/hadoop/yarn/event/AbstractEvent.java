@@ -59,4 +59,5 @@ public abstract class AbstractEvent<TYPE extends Enum<TYPE>>
   public String toString() {
     return "EventType: " + getType();
   }
+  
 }

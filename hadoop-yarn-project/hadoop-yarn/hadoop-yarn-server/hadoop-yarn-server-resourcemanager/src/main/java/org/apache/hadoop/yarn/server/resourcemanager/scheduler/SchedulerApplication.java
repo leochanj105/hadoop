@@ -21,6 +21,8 @@ import org.apache.hadoop.classification.InterfaceAudience.Private;
 import org.apache.hadoop.classification.InterfaceStability.Unstable;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMAppState;
 
+import edu.brown.cs.systems.baggage.DetachedBaggage;
+
 @Private
 @Unstable
 public class SchedulerApplication<T extends SchedulerApplicationAttempt> {
@@ -28,6 +30,7 @@ public class SchedulerApplication<T extends SchedulerApplicationAttempt> {
   private Queue queue;
   private final String user;
   private T currentAttempt;
+  private DetachedBaggage baggage;
 
   public SchedulerApplication(Queue queue, String user) {
     this.queue = queue;
@@ -56,6 +59,14 @@ public class SchedulerApplication<T extends SchedulerApplicationAttempt> {
 
   public void stop(RMAppState rmAppFinalState) {
     queue.getMetrics().finishApp(user, rmAppFinalState);
+  }
+  
+  public void saveBaggage(DetachedBaggage baggage) {
+    this.baggage = baggage;
+  }
+  
+  public DetachedBaggage takeBaggage() {
+    return this.baggage;
   }
 
 }

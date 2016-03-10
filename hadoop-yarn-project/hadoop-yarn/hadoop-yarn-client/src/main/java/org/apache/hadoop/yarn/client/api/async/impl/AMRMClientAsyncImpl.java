@@ -48,8 +48,11 @@ import org.apache.hadoop.yarn.exceptions.YarnRuntimeException;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import edu.brown.cs.systems.tracing.aspects.Annotations.InstrumentQueues;
+
 @Private
 @Unstable
+@InstrumentQueues /** Baggage: pass baggage through queues in this class */
 public class AMRMClientAsyncImpl<T extends ContainerRequest> 
 extends AMRMClientAsync<T> {
   

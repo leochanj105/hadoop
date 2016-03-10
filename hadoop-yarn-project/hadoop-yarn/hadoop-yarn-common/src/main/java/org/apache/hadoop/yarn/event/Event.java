@@ -21,15 +21,19 @@ package org.apache.hadoop.yarn.event;
 import org.apache.hadoop.classification.InterfaceAudience.Public;
 import org.apache.hadoop.classification.InterfaceStability.Evolving;
 
+import edu.brown.cs.systems.tracing.aspects.Annotations.InstrumentedQueueElement;
+
 /**
  * Interface defining events api.
  *
  */
 @Public
 @Evolving
+@InstrumentedQueueElement
 public interface Event<TYPE extends Enum<TYPE>> {
 
   TYPE getType();
   long getTimestamp();
   String toString();
+  
 }

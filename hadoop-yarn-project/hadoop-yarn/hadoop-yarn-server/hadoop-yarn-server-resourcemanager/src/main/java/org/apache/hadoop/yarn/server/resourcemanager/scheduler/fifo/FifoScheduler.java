@@ -298,6 +298,10 @@ public class FifoScheduler extends
   public Allocation allocate(
       ApplicationAttemptId applicationAttemptId, List<ResourceRequest> ask,
       List<ContainerId> release, List<String> blacklistAdditions, List<String> blacklistRemovals) {
+    /* Operating on the application, attach its baggage */
+    joinBaggage(applicationAttemptId);
+    try {
+    
     FiCaSchedulerApp application = getApplicationAttempt(applicationAttemptId);
     if (application == null) {
       LOG.error("Calling allocate on removed " +
@@ -348,6 +352,11 @@ public class FifoScheduler extends
       application.setApplicationHeadroomForMetrics(headroom);
       return new Allocation(allocation.getContainerList(), headroom, null,
           null, null, allocation.getNMTokenList());
+    }
+    
+    } finally {
+      /* Give the baggage back to the application attempt */
+      saveBaggage(applicationAttemptId);
     }
   }
 
@@ -473,6 +482,10 @@ public class FifoScheduler extends
         continue;
       }
 
+      /* Baggage: attach this application's baggage */
+      startBaggage(e.getKey());
+      try {
+      
       LOG.debug("pre-assignContainers");
       application.showRequests();
       synchronized (application) {
@@ -504,6 +517,11 @@ public class FifoScheduler extends
       if (Resources.lessThan(resourceCalculator, clusterResource,
               node.getAvailableResource(), minimumAllocation)) {
         break;
+      }
+      
+      /* Baggage: done with this application */
+      } finally {
+        stopBaggage(e.getKey());
       }
     }
 

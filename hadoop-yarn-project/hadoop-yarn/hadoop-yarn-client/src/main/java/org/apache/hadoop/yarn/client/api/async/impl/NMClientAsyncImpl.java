@@ -64,8 +64,11 @@ import org.apache.hadoop.yarn.state.StateMachineFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
+import edu.brown.cs.systems.tracing.aspects.Annotations.InstrumentQueues;
+
 @Private
 @Unstable
+@InstrumentQueues /** Baggage: pass baggage through queues in this class */
 public class NMClientAsyncImpl extends NMClientAsync {
 
   private static final Log LOG = LogFactory.getLog(NMClientAsyncImpl.class);

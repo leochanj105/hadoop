@@ -19,6 +19,10 @@
 package org.apache.hadoop.yarn.server.resourcemanager;
 
 import com.google.common.annotations.VisibleForTesting;
+
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.tracing.aspects.Annotations.InstrumentQueues;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience.Private;
@@ -622,6 +626,7 @@ public class ResourceManager extends CompositeService implements Recoverable {
   }
 
   @Private
+  @InstrumentQueues /** Baggage: pass baggage through queues in this class */
   public static class SchedulerEventDispatcher extends AbstractService
       implements EventHandler<SchedulerEvent> {
 

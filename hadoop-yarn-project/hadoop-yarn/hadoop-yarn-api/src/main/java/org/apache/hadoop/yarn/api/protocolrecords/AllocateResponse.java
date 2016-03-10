@@ -38,6 +38,8 @@ import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.api.records.Token;
 import org.apache.hadoop.yarn.util.Records;
 
+import edu.brown.cs.systems.tracing.aspects.Annotations.InstrumentedQueueElement;
+
 /**
  * The response sent by the <code>ResourceManager</code> the
  * <code>ApplicationMaster</code> during resource negotiation.
@@ -65,6 +67,7 @@ import org.apache.hadoop.yarn.util.Records;
  */
 @Public
 @Stable
+@InstrumentedQueueElement
 public abstract class AllocateResponse {
 
   @Public

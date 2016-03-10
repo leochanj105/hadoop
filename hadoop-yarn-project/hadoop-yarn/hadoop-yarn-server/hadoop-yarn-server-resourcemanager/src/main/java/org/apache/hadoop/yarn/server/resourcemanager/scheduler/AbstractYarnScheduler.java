@@ -19,7 +19,14 @@
 package org.apache.hadoop.yarn.server.resourcemanager.scheduler;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -57,16 +64,19 @@ import org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMAppEventType;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMAppMoveEvent;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.RMAppAttempt;
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainer;
-import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.QueueEntitlement;
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainerEventType;
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainerFinishedEvent;
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainerImpl;
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainerRecoverEvent;
 import org.apache.hadoop.yarn.server.resourcemanager.rmnode.RMNode;
 import org.apache.hadoop.yarn.server.resourcemanager.rmnode.RMNodeCleanContainerEvent;
+import org.apache.hadoop.yarn.server.resourcemanager.scheduler.common.QueueEntitlement;
 import org.apache.hadoop.yarn.util.resource.Resources;
 
 import com.google.common.util.concurrent.SettableFuture;
+
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.baggage.DetachedBaggage;
 
 
 @SuppressWarnings("unchecked")
@@ -225,6 +235,46 @@ public abstract class AbstractYarnScheduler
     }
 
     application.containerLaunchedOnNode(containerId, node.getNodeID());
+  }
+  
+  public void startBaggage(ApplicationId applicationId) {
+    SchedulerApplication<T> app =
+        applications.get(applicationId);
+    DetachedBaggage baggage = app != null ? app.takeBaggage() : null;
+    Baggage.start(baggage);
+  }
+  
+  public void stopBaggage(ApplicationId applicationId) {
+    SchedulerApplication<T> app =
+        applications.get(applicationId);
+    DetachedBaggage baggage = Baggage.stop();
+    if (app != null) {
+      app.saveBaggage(baggage);
+    }    
+  }
+  
+  public void joinBaggage(ApplicationAttemptId applicationAttemptId) {
+    joinBaggage(applicationAttemptId.getApplicationId());
+  }
+  
+  public void joinBaggage(ApplicationId applicationId) {
+    SchedulerApplication<T> app =
+        applications.get(applicationId);
+    if (app != null) {
+      Baggage.join(app.takeBaggage());
+    }    
+  }
+  
+  public void saveBaggage(ApplicationAttemptId applicationAttemptId) {
+    saveBaggage(applicationAttemptId.getApplicationId());
+  }
+  
+  public void saveBaggage(ApplicationId applicationId) {
+    SchedulerApplication<T> app =
+        applications.get(applicationId);
+    if (app != null) {
+      app.saveBaggage(Baggage.fork());
+    }    
   }
 
   public T getApplicationAttempt(ApplicationAttemptId applicationAttemptId) {
