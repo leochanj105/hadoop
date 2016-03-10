@@ -190,7 +190,7 @@ public class DFSOutputStream extends FSOutputSummer
   private static final BlockStoragePolicySuite blockStoragePolicySuite =
       BlockStoragePolicySuite.createDefaultSuite();
   
-  private DetachedBaggage lastAckedBaggage = null;
+  private volatile DetachedBaggage lastAckedBaggage = null;
 
   /** Use {@link ByteArrayManager} to create buffer for non-heartbeat packets.*/
   private DFSPacket createPacket(int packetSize, int chunksPerPkt, long offsetInBlock,
@@ -558,13 +558,13 @@ public class DFSOutputStream extends FSOutputSummer
                   ackQueue.size() != 0 && dfsClient.clientRunning) {
                 dataQueue.wait(1000);// wait for acks to arrive from datanodes
               }
+              
+              /* Baggage: join with acked packet */
+              { Baggage.join(lastAckedBaggage); }
             }
             if (streamerClosed || hasError || !dfsClient.clientRunning) {
               continue;
             }
-            
-            /* Baggage: join with acked packet */
-            { Baggage.join(lastAckedBaggage); }
 
             endBlock();
           }
@@ -2195,13 +2195,9 @@ public class DFSOutputStream extends FSOutputSummer
       long begin = Time.monotonicNow();
       try {
         synchronized (dataQueue) {
-          boolean first = true;
           while (!isClosed()) {
             checkClosed();
             if (lastAckedSeqno >= seqno) {
-              if (first) {
-                Baggage.join(lastAckedBaggage);
-              }
               break;
             }
             try {
@@ -2211,9 +2207,9 @@ public class DFSOutputStream extends FSOutputSummer
               throw new InterruptedIOException(
                   "Interrupted while waiting for data to be acknowledged by pipeline");
             }
-            first = false;
-            Baggage.join(lastAckedBaggage);
           }
+
+          Baggage.join(DetachedBaggage.split(lastAckedBaggage));
         }
         checkClosed();
       } catch (ClosedChannelException e) {
