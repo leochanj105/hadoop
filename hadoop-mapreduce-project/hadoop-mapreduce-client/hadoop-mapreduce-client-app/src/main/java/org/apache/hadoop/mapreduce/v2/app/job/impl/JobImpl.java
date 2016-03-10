@@ -132,6 +132,9 @@ import org.apache.hadoop.yarn.util.Clock;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.baggage.DetachedBaggage;
+
 /** Implementation of Job interface. Maintains the state machines of Job.
  * The read and write calls use ReadWriteLock for concurrency.
  */
@@ -640,6 +643,7 @@ public class JobImpl implements org.apache.hadoop.mapreduce.v2.app.job.Job,
   private float reduceProgress;
   private float cleanupProgress;
   private boolean isUber = false;
+  private volatile DetachedBaggage baggage;
 
   private Credentials jobCredentials;
   private Token<JobTokenIdentifier> jobToken;
@@ -991,6 +995,7 @@ public class JobImpl implements org.apache.hadoop.mapreduce.v2.app.job.Job,
     }
     try {
       writeLock.lock();
+      Baggage.join(baggage);
       JobStateInternal oldState = getInternalState();
       try {
          getStateMachine().doTransition(event.getType(), event);
@@ -1010,6 +1015,16 @@ public class JobImpl implements org.apache.hadoop.mapreduce.v2.app.job.Job,
     }
     
     finally {
+      baggage = Baggage.fork();
+      writeLock.unlock();
+    }
+  }
+  
+  public void join() {
+    writeLock.lock();
+    try {
+      Baggage.join(baggage);
+    } finally {
       writeLock.unlock();
     }
   }
