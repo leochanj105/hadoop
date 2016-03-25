@@ -1811,8 +1811,8 @@ public class DFSOutputStream extends FSOutputSummer
 
   private void waitAndQueueCurrentPacket() throws IOException {
     synchronized (dataQueue) {
-      // Baggage: join up with the current packet
-      { if (currentPacket != null) Baggage.join(currentPacket.baggage); }
+//      // Baggage: join up with the current packet
+//      { if (currentPacket != null) Baggage.join(currentPacket.baggage); }
       
       try {
       // If queue is full, then wait till we have enough space
