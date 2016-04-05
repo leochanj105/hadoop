@@ -137,6 +137,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
+import edu.brown.cs.systems.baggage.Baggage;
+import edu.brown.cs.systems.tracing.aspects.Annotations.BaggageInheritanceDisabled;
+
 public class ResourceLocalizationService extends CompositeService
     implements EventHandler<LocalizationEvent>, LocalizationProtocol {
 
@@ -756,7 +759,7 @@ public class ResourceLocalizationService extends CompositeService
     return Executors.newFixedThreadPool(nThreads, tf);
   }
 
-
+  @BaggageInheritanceDisabled
   class PublicLocalizer extends Thread {
 
     final FileContext lfs;
@@ -848,13 +851,14 @@ public class ResourceLocalizationService extends CompositeService
       try {
         // TODO shutdown, better error handling esp. DU
         while (!Thread.currentThread().isInterrupted()) {
+          Baggage.discard();
           try {
             Future<Path> completed = queue.take();
             LocalizerResourceRequestEvent assoc = pending.remove(completed);
             try {
               Path local = completed.get();
               if (null == assoc) {
-                LOG.error("Localized unknown resource to " + completed);
+                LOG.error("Localized unknown resource to " + completed + " local: " + local);
                 // TODO delete
                 return;
               }
