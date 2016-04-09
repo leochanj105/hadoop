@@ -71,6 +71,11 @@ public class PacketHeader {
 
   public PacketHeader() {
   }
+  
+  public PacketHeader(PacketHeader other) {
+    this(other.getPacketLen(), other.getOffsetInBlock(), other.getSeqno(), 
+        other.isLastPacketInBlock(), other.getDataLen(), other.getSyncBlock());
+  }
 
   public PacketHeader(int packetLen, long offsetInBlock, long seqno,
                       boolean lastPacketInBlock, int dataLen, boolean syncBlock) {

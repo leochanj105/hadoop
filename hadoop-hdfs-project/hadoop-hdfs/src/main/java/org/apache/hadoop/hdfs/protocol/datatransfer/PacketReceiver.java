@@ -27,8 +27,8 @@ import java.nio.channels.ReadableByteChannel;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
-import org.apache.hadoop.util.DirectBufferPool;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.util.DirectBufferPool;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
@@ -200,32 +200,14 @@ public class PacketReceiver implements Closeable {
   public void mirrorPacketTo(DataOutputStream mirrorOut) throws IOException {
     Preconditions.checkState(!useDirectBuffers,
         "Currently only supported for non-direct buffers");
-    updateHeaderBaggage();
-    mirrorOut.write(curPacketBuf.array(),
-        curPacketBuf.arrayOffset(),
-        curPacketBuf.remaining());
+    
+    // Update header baggage  
+    PacketHeader newHeader = new PacketHeader(curHeader);
+    
+    // Write out new header, then write checksum slice and data from current buffer
+    mirrorOut.write(newHeader.getBytes());
+    mirrorOut.write(curChecksumSlice.array(), curChecksumSlice.arrayOffset(), curChecksumSlice.capacity() + curDataSlice.capacity());
   }
-  
-  /**
-   * This updates the baggage in the packet header
-   */
-  private void updateHeaderBaggage() {
-    // Only update context if there was a previous one, and we assume they have the exact
-    // same length, so we can just drop in a new packet header.
-    if (!BaggageContents.isEmpty()) {
-      PacketHeader newHeader = new PacketHeader(curHeader.getPacketLen(), curHeader.getOffsetInBlock(),
-          curHeader.getSeqno(), curHeader.isLastPacketInBlock(), curHeader.getDataLen(),
-          curHeader.getSyncBlock());
-      int priorPosition = curPacketBuf.position();
-      int priorLimit = curPacketBuf.limit();
-      curPacketBuf.position(0);
-      curPacketBuf.limit(newHeader.getSerializedSize());
-      newHeader.putInBuffer(curPacketBuf);
-      curPacketBuf.position(priorPosition);
-      curPacketBuf.limit(priorLimit);
-    }
-  }
-
   
   private static void doReadFully(ReadableByteChannel ch, InputStream in,
       ByteBuffer buf) throws IOException {
