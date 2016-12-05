@@ -21,11 +21,14 @@ package org.apache.hadoop.yarn.event;
 import org.apache.hadoop.classification.InterfaceAudience.Public;
 import org.apache.hadoop.classification.InterfaceStability.Evolving;
 
+import edu.brown.cs.systems.tracing.aspects.Annotations.InstrumentedQueueElement;
+
 /**
  * Parent class of all the events. All events extend this class.
  */
 @Public
 @Evolving
+@InstrumentedQueueElement
 public abstract class AbstractEvent<TYPE extends Enum<TYPE>> 
     implements Event<TYPE> {
 
