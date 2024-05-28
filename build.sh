@@ -1,3 +1,3 @@
 #build
-
-mvn package -Pdist -Dtar -Dmaven.javadoc.skip=true -Dmaven.test.skip=true
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+mvn package -Pdist -Dmaven.javadoc.skip=true -Dmaven.test.skip=true

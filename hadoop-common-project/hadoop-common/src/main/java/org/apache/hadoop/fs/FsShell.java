@@ -233,6 +233,22 @@ public class FsShell extends Configured implements Tool {
     }    
   }
 
+  public int appendTo(String msg, String target){
+    System.out.println(msg+"\n"+target);
+    Path f = new Path(target);
+    try{
+      FileSystem fs = this.getFS();
+      System.out.println(fs);
+      FSDataOutputStream append = fs.append(f);
+      append.write(msg.getBytes());
+      append.close();
+    }
+    catch(Exception e){
+      e.printStackTrace();
+    }
+    return -1;
+  }
+  
   /**
    * run
    */
@@ -247,6 +263,11 @@ public class FsShell extends Configured implements Tool {
       String cmd = argv[0];
       Command instance = null;
       try {
+        System.out.println("!!!!!!\n"+ cmd);
+        if(cmd.contains("append")){
+          return appendTo(argv[1], argv[2]);
+          //throw new RuntimeException();
+        }
         instance = commandFactory.getInstance(cmd);
         if (instance == null) {
           throw new UnknownCommandException();
