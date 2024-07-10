@@ -62,6 +62,12 @@
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-server</artifactId>
       <scope>compile</scope>
+      <exclusions>
+        <exclusion>
+            <artifactId>asm</artifactId>
+            <groupId>asm</groupId>
+        </exclusion>
+    </exclusions>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>

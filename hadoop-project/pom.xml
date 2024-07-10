@@ -310,11 +310,11 @@
         <version>6.1.26</version>
       </dependency>
 
-      <dependency>
-        <groupId>asm</groupId>
-        <artifactId>asm</artifactId>
-        <version>3.2</version>
-      </dependency>
+      <!-- <dependency> -->
+      <!--   <groupId>asm</groupId> -->
+      <!--   <artifactId>asm</artifactId> -->
+      <!--   <version>3.2</version> -->
+      <!-- </dependency> -->
       <dependency>
         <groupId>com.sun.jersey</groupId>
         <artifactId>jersey-core</artifactId>
@@ -335,6 +335,12 @@
         <groupId>com.sun.jersey</groupId>
         <artifactId>jersey-server</artifactId>
         <version>1.8</version>
+        <exclusions>
+          <exclusion>
+            <artifactId>asm</artifactId>
+            <groupId>asm</groupId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
@@ -896,7 +902,7 @@
         <dependency>
           <groupId>jdk.tools</groupId>
           <artifactId>jdk.tools</artifactId>
-          <version>1.6</version>
+          <version>1.8</version>
           <scope>system</scope>
           <systemPath>${java.home}/../lib/tools.jar</systemPath>
         </dependency>

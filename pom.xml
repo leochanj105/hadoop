@@ -96,7 +96,7 @@
                 <version>[3.0.2,)</version>
               </requireMavenVersion>
               <requireJavaVersion>
-                <version>1.6</version>
+                <version>1.8</version>
               </requireJavaVersion>
             </rules>
           </configuration>
