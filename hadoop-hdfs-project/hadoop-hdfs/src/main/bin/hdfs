@@ -146,6 +146,6 @@ if [ "$starting_secure_dn" = "true" ]; then
            org.apache.hadoop.hdfs.server.datanode.SecureDataNodeStarter "$@"
 else
   # run it
-  exec "$JAVA"  -javaagent:/home/jingyuan/lumos/lumos-agent/target/LumosAgent-jar-with-dependencies.jar -Dproc_$COMMAND $JAVA_HEAP_MAX $HADOOP_OPTS $CLASS "$@"
+  exec "$JAVA" $AGENT_PREFIX -Dproc_$COMMAND $JAVA_HEAP_MAX $HADOOP_OPTS $CLASS "$@"
 fi
 
