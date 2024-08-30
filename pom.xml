@@ -205,6 +205,7 @@
           <reportSet>
             <id>aggregate</id>
             <configuration>
+              <detectJavaApiLink>false</detectJavaApiLink>
               <maxmemory>1024m</maxmemory>
               <linksource>true</linksource>
               <quiet>true</quiet>
@@ -333,6 +334,7 @@
                   <goal>aggregate</goal>
                 </goals>
                 <configuration>
+                  <detectJavaApiLink>false</detectJavaApiLink>
                   <overview>hadoop-common-project/hadoop-common/src/main/java/overview.html</overview>
                 </configuration>
               </execution>
