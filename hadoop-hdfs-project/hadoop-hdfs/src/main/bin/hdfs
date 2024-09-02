@@ -301,6 +301,6 @@ elif [ "$starting_privileged_nfs" = "true" ] ; then
            org.apache.hadoop.hdfs.nfs.nfs3.PrivilegedNfsGatewayStarter "$@"
 else
   # run it
-  exec "$JAVA" -Dproc_$COMMAND $JAVA_HEAP_MAX $HADOOP_OPTS $CLASS "$@"
+  exec "$JAVA" $AGENT_PREFIX -Dproc_$COMMAND $JAVA_HEAP_MAX $HADOOP_OPTS $CLASS "$@"
 fi
 
