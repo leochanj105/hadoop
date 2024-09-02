@@ -36,7 +36,6 @@
     <wsce.config.dir>../etc/hadoop</wsce.config.dir>
     <wsce.config.file>wsce-site.xml</wsce.config.file>
   </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
@@ -194,6 +193,7 @@
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
+      <version>2.5.0</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
