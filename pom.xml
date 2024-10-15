@@ -33,78 +33,78 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
       <groupId>edu.brown.cs.systems</groupId>
       <artifactId>tracingplane-common</artifactId>
       <version>${tracingplane.version}</version>
-      <scope>system</scope>
-      <systemPath>/home/jingyuan/tracing-framework/dist/target/tracingplane-common-${tracingplane.version}.jar</systemPath>
+      <!-- <scope>system</scope> -->
+      <!-- <systemPath>/home/jingyuan/tracing-framework/dist/target/tracingplane-common-${tracingplane.version}.jar</systemPath> -->
     </dependency>
     <dependency>
       <groupId>edu.brown.cs.systems</groupId>
       <artifactId>xtrace-common</artifactId>
       <version>${tracingplane.version}</version>
-      <scope>system</scope>
-      <systemPath>/home/jingyuan/tracing-framework/dist/target/xtrace-common-${tracingplane.version}.jar</systemPath>
+      <!-- <scope>system</scope> -->
+      <!-- <systemPath>/home/jingyuan/tracing-framework/dist/target/xtrace-common-${tracingplane.version}.jar</systemPath> -->
     </dependency>
     <dependency>
       <groupId>edu.brown.cs.systems</groupId>
       <artifactId>pivottracing-common</artifactId>
       <version>${tracingplane.version}</version>
-      <scope>system</scope>
-      <systemPath>/home/jingyuan/tracing-framework/dist/target/pivottracing-common-${tracingplane.version}.jar</systemPath>
+      <!-- <scope>system</scope> -->
+      <!-- <systemPath>/home/jingyuan/tracing-framework/dist/target/pivottracing-common-${tracingplane.version}.jar</systemPath> -->
     </dependency>
     <dependency>
       <groupId>edu.brown.cs.systems</groupId>
       <artifactId>retro-common</artifactId>
       <version>${tracingplane.version}</version>
-      <scope>system</scope>
-      <systemPath>/home/jingyuan/tracing-framework/dist/target/retro-common-${tracingplane.version}.jar</systemPath>
+      <!-- <scope>system</scope> -->
+      <!-- <systemPath>/home/jingyuan/tracing-framework/dist/target/retro-common-${tracingplane.version}.jar</systemPath> -->
     </dependency>
     <dependency>
       <groupId>edu.brown.cs.systems</groupId>
       <artifactId>tracingplane-client</artifactId>
       <version>${tracingplane.version}</version>
-      <scope>system</scope>
-      <systemPath>/home/jingyuan/tracing-framework/dist/target/tracingplane-client-${tracingplane.version}.jar</systemPath>
+      <!-- <scope>system</scope> -->
+      <!-- <systemPath>/home/jingyuan/tracing-framework/dist/target/tracingplane-client-${tracingplane.version}.jar</systemPath> -->
     </dependency>
     <dependency>
       <groupId>edu.brown.cs.systems</groupId>
       <artifactId>xtrace-client</artifactId>
       <version>${tracingplane.version}</version>
-      <scope>system</scope>
-      <systemPath>/home/jingyuan/tracing-framework/dist/target/xtrace-client-${tracingplane.version}.jar</systemPath>
+      <!-- <scope>system</scope> -->
+      <!-- <systemPath>/home/jingyuan/tracing-framework/dist/target/xtrace-client-${tracingplane.version}.jar</systemPath> -->
     </dependency>
     <dependency>
       <groupId>edu.brown.cs.systems</groupId>
       <artifactId>pivottracing-agent</artifactId>
       <version>${tracingplane.version}</version>
-      <scope>system</scope>
-      <systemPath>/home/jingyuan/tracing-framework/dist/target/pivottracing-agent-${tracingplane.version}.jar</systemPath>
+      <!-- <scope>system</scope> -->
+      <!-- <systemPath>/home/jingyuan/tracing-framework/dist/target/pivottracing-agent-${tracingplane.version}.jar</systemPath> -->
     </dependency>
     <dependency>
       <groupId>edu.brown.cs.systems</groupId>
       <artifactId>retro-resources</artifactId>
       <version>${tracingplane.version}</version>
-      <scope>system</scope>
-      <systemPath>/home/jingyuan/tracing-framework/dist/target/retro-resources-${tracingplane.version}.jar</systemPath>
+      <!-- <scope>system</scope> -->
+      <!-- <systemPath>/home/jingyuan/tracing-framework/dist/target/retro-resources-${tracingplane.version}.jar</systemPath> -->
     </dependency>
     <dependency>
       <groupId>edu.brown.cs.systems</groupId>
       <artifactId>retro-throttling</artifactId>
       <version>${tracingplane.version}</version>
-      <scope>system</scope>
-      <systemPath>/home/jingyuan/tracing-framework/dist/target/retro-throttling-${tracingplane.version}.jar</systemPath>
+      <!-- <scope>system</scope> -->
+      <!-- <systemPath>/home/jingyuan/tracing-framework/dist/target/retro-throttling-${tracingplane.version}.jar</systemPath> -->
     </dependency>
     <dependency>
       <groupId>edu.brown.cs.systems</groupId>
       <artifactId>tracingplane-aspects</artifactId>
       <version>${tracingplane.version}</version>
-      <scope>system</scope>
-      <systemPath>/home/jingyuan/tracing-framework/dist/target/tracingplane-aspects-${tracingplane.version}.jar</systemPath>
+      <!-- <scope>system</scope> -->
+      <!-- <systemPath>/home/jingyuan/tracing-framework/dist/target/tracingplane-aspects-${tracingplane.version}.jar</systemPath> -->
     </dependency>
     <dependency>
       <groupId>edu.brown.cs.systems</groupId>
       <artifactId>xtrace-aspects</artifactId>
       <version>${tracingplane.version}</version>
-      <scope>system</scope>
-      <systemPath>/home/jingyuan/tracing-framework/dist/target/xtrace-aspects-${tracingplane.version}.jar</systemPath>
+      <!-- <scope>system</scope> -->
+      <!-- <systemPath>/home/jingyuan/tracing-framework/dist/target/xtrace-aspects-${tracingplane.version}.jar</systemPath> -->
     </dependency>
     <dependency>
       <groupId>edu.brown.cs.systems</groupId>
@@ -113,13 +113,13 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
       <scope>system</scope>
       <systemPath>/home/jingyuan/tracing-framework/dist/target/pivottracing-aspects-${tracingplane.version}.jar</systemPath>
     </dependency>
-    <dependency>
-      <groupId>edu.brown.cs.systems</groupId>
-      <artifactId>retro-aspects</artifactId>
-      <version>${tracingplane.version}</version>
-      <scope>system</scope>
-      <systemPath>/home/jingyuan/tracing-framework/dist/target/retro-aspects-${tracingplane.version}.jar</systemPath>
-    </dependency>
+    <!-- <dependency> -->
+    <!--   <groupId>edu.brown.cs.systems</groupId> -->
+    <!--   <artifactId>retro-aspects</artifactId> -->
+    <!--   <version>${tracingplane.version}</version> -->
+      <!-- <scope>system</scope> -->
+      <!-- <systemPath>/home/jingyuan/tracing-framework/dist/target/retro-aspects-${tracingplane.version}.jar</systemPath> -->
+    <!-- </dependency> -->
   </dependencies>
 
   <dependencyManagement>
@@ -215,7 +215,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <module>hadoop-hdfs-project</module>
     <!-- <module>hadoop-yarn-project</module> -->
     <!-- <module>hadoop-mapreduce-project</module> -->
-    <module>hadoop-tools</module>
+    <!-- <module>hadoop-tools</module> -->
     <module>hadoop-dist</module>
     <!-- <module>hadoop-client</module> -->
     <!-- <module>hadoop-minicluster</module> -->
@@ -300,18 +300,18 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
               <groupId>edu.brown.cs.systems</groupId>
               <artifactId>tracingplane-aspects</artifactId>
             </aspectLibrary>
-            <aspectLibrary>
-              <groupId>edu.brown.cs.systems</groupId>
-              <artifactId>retro-aspects</artifactId>
-            </aspectLibrary>
+            <!-- <aspectLibrary> -->
+            <!--   <groupId>edu.brown.cs.systems</groupId> -->
+            <!--   <artifactId>retro-aspects</artifactId> -->
+            <!-- </aspectLibrary> -->
             <aspectLibrary>
               <groupId>edu.brown.cs.systems</groupId>
               <artifactId>xtrace-aspects</artifactId>
             </aspectLibrary>
-            <aspectLibrary>
-              <groupId>edu.brown.cs.systems</groupId>
-              <artifactId>pivottracing-aspects</artifactId>
-            </aspectLibrary>
+            <!-- <aspectLibrary> -->
+            <!--   <groupId>edu.brown.cs.systems</groupId> -->
+            <!--   <artifactId>pivottracing-aspects</artifactId> -->
+            <!-- </aspectLibrary> -->
           </aspectLibraries>
         </configuration>
         <executions>

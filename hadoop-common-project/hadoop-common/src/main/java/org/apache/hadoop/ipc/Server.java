@@ -1916,7 +1916,6 @@ public abstract class Server {
         }
         call.enqueue = System.nanoTime(); 
       }
-
       callQueue.put(call);              // queue the call; maybe blocked here
       incRpcCount();  // Increment the rpc count
     }
@@ -2063,7 +2062,6 @@ public abstract class Server {
         TraceScope traceScope = null;
         try {
           final Call call = callQueue.take(); // pop the queue; maybe blocked here
-          
           /* Retro: manually save dequeue time */
           { call.dequeue = System.nanoTime(); }
           

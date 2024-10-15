@@ -623,11 +623,11 @@ class BlockSender implements java.io.Closeable {
     }
 
     if (throttler != null) { // rebalancing so throttle
-      throttler.throttle(packetLen);
+      // throttler.throttle(packetLen);
     }
     
     /* Retro throttle */
-    { throttlingpoint.throttle(); }
+    // { throttlingpoint.throttle(); }
 
     return dataLen;
   }

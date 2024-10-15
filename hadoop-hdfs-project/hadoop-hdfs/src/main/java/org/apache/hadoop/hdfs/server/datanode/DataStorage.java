@@ -26,6 +26,7 @@ import com.google.common.util.concurrent.Futures;
 
 import edu.brown.cs.systems.baggage.Baggage;
 import edu.brown.cs.systems.retro.backgroundtasks.HDFSBackgroundTask;
+import edu.brown.cs.systems.xtrace.XTrace;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
@@ -902,7 +903,7 @@ public class DataStorage extends Storage {
    */
   void doFinalize(StorageDirectory sd) throws IOException {
     /* Retro: finalize background task */
-    HDFSBackgroundTask.FINALIZE.start();
+    // HDFSBackgroundTask.FINALIZE.start();
     final long begin = System.nanoTime();
     
     File prevDir = sd.getPreviousDir();
@@ -919,7 +920,6 @@ public class DataStorage extends Storage {
     final File bbwDir = new File(sd.getRoot(), Storage.STORAGE_1_BBW);
     // 1. rename previous to finalized.tmp
     rename(prevDir, tmpDir);
-
     // 2. delete finalized.tmp dir in a separate thread
     // Also delete the blocksBeingWritten from HDFS 1.x and earlier, if
     // it exists.
@@ -935,7 +935,7 @@ public class DataStorage extends Storage {
             LOG.error("Finalize upgrade for " + dataDirPath + " failed", ex);
           } finally {
             /* Retro: finalize background task complete */
-            HDFSBackgroundTask.FINALIZE.end(System.nanoTime() - begin);
+            // HDFSBackgroundTask.FINALIZE.end(System.nanoTime() - begin);
           }
           LOG.info("Finalize upgrade for " + dataDirPath + " is complete");
         }

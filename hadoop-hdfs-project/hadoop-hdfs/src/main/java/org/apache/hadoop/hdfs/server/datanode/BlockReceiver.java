@@ -811,7 +811,7 @@ class BlockReceiver implements Closeable {
     }
     
     /* Retro throttle */
-    throttlingpoint.throttle();
+    // throttlingpoint.throttle();
     
     return lastPacketInBlock?-1:len;
   }

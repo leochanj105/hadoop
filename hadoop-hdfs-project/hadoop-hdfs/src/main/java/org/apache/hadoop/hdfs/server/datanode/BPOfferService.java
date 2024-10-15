@@ -22,6 +22,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import edu.brown.cs.systems.xtrace.XTrace;
+import edu.brown.cs.systems.xtrace.logging.XTraceLogger;
+
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.StorageType;
@@ -646,11 +649,11 @@ class BPOfferService {
    */
   private boolean processCommandFromActive(DatanodeCommand cmd,
       BPServiceActor actor) throws IOException {
+    // System.out.println("inside commandfromact");
     final BlockCommand bcmd = 
       cmd instanceof BlockCommand? (BlockCommand)cmd: null;
     final BlockIdCommand blockIdCmd = 
       cmd instanceof BlockIdCommand ? (BlockIdCommand)cmd: null;
-
     switch(cmd.getAction()) {
     case DatanodeProtocol.DNA_TRANSFER:
       // Send a copy of a block to another datanode
@@ -691,11 +694,11 @@ class BPOfferService {
       throw new UnsupportedOperationException("Received unimplemented DNA_SHUTDOWN");
     case DatanodeProtocol.DNA_FINALIZE:
       String bp = ((FinalizeCommand) cmd).getBlockPoolId();
+      LOG.info("Got finalize command for block pool " + bp +", "+ getBlockPoolId());
       LOG.info("Got finalize command for block pool " + bp);
       assert getBlockPoolId().equals(bp) :
         "BP " + getBlockPoolId() + " received DNA_FINALIZE " +
         "for other block pool " + bp;
-
       dn.finalizeUpgradeForPool(bp);
       break;
     case DatanodeProtocol.DNA_RECOVERBLOCK:

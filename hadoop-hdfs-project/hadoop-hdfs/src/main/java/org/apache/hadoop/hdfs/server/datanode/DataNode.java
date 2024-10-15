@@ -212,6 +212,7 @@ import edu.brown.cs.systems.pivottracing.agent.PivotTracing;
 import edu.brown.cs.systems.retro.aspects.Retro;
 import edu.brown.cs.systems.retro.backgroundtasks.HDFSBackgroundTask;
 import edu.brown.cs.systems.tracing.aspects.Annotations.BaggageInheritanceDisabled;
+import edu.brown.cs.systems.xtrace.XTrace;
 
 /**********************************************************
  * DataNode is a class (and program) that stores a set of
@@ -1869,7 +1870,6 @@ public class DataNode extends ReconfigurableBase
       StorageType[] xferTargetStorageTypes) throws IOException {
     BPOfferService bpos = getBPOSForBlock(block);
     DatanodeRegistration bpReg = getDNRegistrationForBP(block.getBlockPoolId());
-
     boolean replicaNotExist = false;
     boolean replicaStateNotFinalized = false;
     boolean blockFileNotExist = false;
@@ -2077,7 +2077,7 @@ public class DataNode extends ReconfigurableBase
     @Override
     public void run() {
       /* Retro: begin the background task */
-      HDFSBackgroundTask.REPLICATION.start();
+      // HDFSBackgroundTask.REPLICATION.start();
       final long begin = System.nanoTime();
       
       xmitsInProgress.getAndIncrement();
@@ -2167,7 +2167,7 @@ public class DataNode extends ReconfigurableBase
         IOUtils.closeSocket(sock);
         
         /* Retro: background task complete */
-        HDFSBackgroundTask.REPLICATION.end(System.nanoTime() - begin);
+        // HDFSBackgroundTask.REPLICATION.end(System.nanoTime() - begin);
       }
     }
   }
@@ -2530,7 +2530,7 @@ public class DataNode extends ReconfigurableBase
       public void run() {
         for(RecoveringBlock b : blocks) {
           /* Retro: block recovery background task */
-          HDFSBackgroundTask.RECOVER.start();
+          // HDFSBackgroundTask.RECOVER.start();
           final long begin = System.nanoTime();
           
           try {
@@ -2539,7 +2539,7 @@ public class DataNode extends ReconfigurableBase
           } catch (IOException e) {
             LOG.warn("recoverBlocks FAILED: " + b, e);
           } finally {
-            HDFSBackgroundTask.RECOVER.end(System.nanoTime() - begin);
+            // HDFSBackgroundTask.RECOVER.end(System.nanoTime() - begin);
           }
         }
       }

@@ -39,6 +39,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import edu.brown.cs.systems.xtrace.XTrace;
+
 /**
  * Manages the BPOfferService objects for the data node.
  * Creation, removal, starting, stopping, shutdown on BPOfferService

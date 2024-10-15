@@ -602,7 +602,7 @@ public class BlockPoolSliceStorage extends Storage {
    */
   void doFinalize(File dnCurDir) throws IOException {
     /* Retro: measure finalize latency */
-    HDFSBackgroundTask.FINALIZE.start();
+    // HDFSBackgroundTask.FINALIZE.start();
     final long begin = System.nanoTime();
     
     File bpRoot = getBpRoot(blockpoolID, dnCurDir);
@@ -631,7 +631,7 @@ public class BlockPoolSliceStorage extends Storage {
         } catch (IOException ex) {
           LOG.error("Finalize upgrade for " + dataDirPath + " failed.", ex);
         } finally {
-          HDFSBackgroundTask.FINALIZE.end(System.nanoTime() - begin);
+          // HDFSBackgroundTask.FINALIZE.end(System.nanoTime() - begin);
         }
         LOG.info("Finalize upgrade for " + dataDirPath + " is complete.");
       }

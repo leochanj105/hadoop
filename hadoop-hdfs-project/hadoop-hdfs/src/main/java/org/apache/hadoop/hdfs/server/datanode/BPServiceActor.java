@@ -66,6 +66,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 
 import edu.brown.cs.systems.retro.backgroundtasks.HDFSBackgroundTask;
+import edu.brown.cs.systems.xtrace.XTrace;
 
 /**
  * A thread per active or standby namenode to perform:
@@ -631,14 +632,12 @@ class BPServiceActor implements Runnable {
         + " CACHEREPORT_INTERVAL of " + dnConf.cacheReportInterval + "msec"
         + " Initial delay: " + dnConf.initialBlockReportDelay + "msec"
         + "; heartBeatInterval=" + dnConf.heartBeatInterval);
-
     //
     // Now loop for a long time....
     //
     while (shouldRun()) {
       try {
         final long startTime = scheduler.monotonicNow();
-
         //
         // Every so often, send heartbeat or block-report
         //
@@ -653,13 +652,14 @@ class BPServiceActor implements Runnable {
           //
           if (!dn.areHeartbeatsDisabledForTests()) {
             /* Retro: measure heartbeat latency */
-            HDFSBackgroundTask.HEARTBEAT.start();
+
+            //HDFSBackgroundTask.HEARTBEAT.start();
             long begin = System.nanoTime();
             HeartbeatResponse resp;
             try {
               resp = sendHeartBeat();
             } finally {
-              HDFSBackgroundTask.HEARTBEAT.end(System.nanoTime() - begin);
+              //HDFSBackgroundTask.HEARTBEAT.end(System.nanoTime() - begin);
             }
             
             assert resp != null;
@@ -678,7 +678,6 @@ class BPServiceActor implements Runnable {
             if (state == HAServiceState.ACTIVE) {
               handleRollingUpgradeStatus(resp);
             }
-
             long startProcessCommands = monotonicNow();
             if (!processCommand(resp.getCommands()))
               continue;
@@ -804,7 +803,6 @@ class BPServiceActor implements Runnable {
   @Override
   public void run() {
     LOG.info(this + " starting to offer service");
-
     try {
       while (true) {
         // init stuff

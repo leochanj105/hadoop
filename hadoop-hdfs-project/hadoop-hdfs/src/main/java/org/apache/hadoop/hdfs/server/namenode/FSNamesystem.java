@@ -300,6 +300,7 @@ import com.google.common.collect.Lists;
 import edu.brown.cs.systems.pubsub.PubSub;
 import edu.brown.cs.systems.pubsub.PubSubClient.Subscriber;
 import edu.brown.cs.systems.pubsub.PubSubProtos.StringMessage;
+import edu.brown.cs.systems.xtrace.XTrace;
 
 /***************************************************
  * FSNamesystem does the actual bookkeeping work for the
@@ -358,7 +359,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
           stat.getReplication(), stat.getBlockSize(), stat.getModificationTime(),
           stat.getAccessTime(), stat.getPermission(), stat.getOwner(),
           stat.getGroup(), symlink, path);
-    }
+   }
     for (AuditLogger logger : auditLoggers) {
       if (logger instanceof HdfsAuditLogger) {
         HdfsAuditLogger hdfsLogger = (HdfsAuditLogger) logger;
@@ -3851,7 +3852,9 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
    */
   HdfsFileStatus getFileInfo(final String src, boolean resolveLink)
     throws IOException {
+    // System.out.println("inside getFileInfo");
     checkOperation(OperationCategory.READ);
+    // System.out.println("after READ");
     HdfsFileStatus stat = null;
     readLock();
     try {

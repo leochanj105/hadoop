@@ -120,6 +120,8 @@ import com.google.common.collect.Sets;
 
 import edu.brown.cs.systems.baggage.Baggage;
 import edu.brown.cs.systems.retro.backgroundtasks.HDFSBackgroundTask;
+import edu.brown.cs.systems.xtrace.XTrace;
+import edu.brown.cs.systems.xtrace.logging.XTraceLogger;
 
 /**************************************************
  * FSDataset manages a set of data blocks.  Each block
@@ -1711,6 +1713,9 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
       FileNotFoundException, EOFException, IOException {
     final ReplicaInfo replicaInfo = volumeMap.get(b.getBlockPoolId(), 
         b.getLocalBlock());
+    XTraceLogger logger = XTrace.getLogger("LUMOS");
+    System.out.println(logger);
+    logger.log("[LUMOS] inside checkBlock");
     if (replicaInfo == null) {
       throw new ReplicaNotFoundException(b);
     }
