@@ -303,7 +303,6 @@ class FsDatasetAsyncDiskService {
       IOUtils.cleanup(null, volumeRef);
       
       /* Retro: invalidate background task complete */
-      HDFSBackgroundTask.INVALIDATE.end(System.nanoTime() - begin);
     }
   }
   
