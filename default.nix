@@ -79,9 +79,10 @@ maven.buildMavenPackage rec {
     '';
   };
 
-  patchPhase = ''
-    mkdir -p hadoop-hdfs-project/hadoop-hdfs-httpfs/downloads
-    cp ${tomcatSrc} hadoop-hdfs-project/hadoop-hdfs-httpfs/downloads/apache-tomcat-6.0.44.tar.gz
+  afterDepsSetup = ''
+    TOMCAT_DOWNLOAD_DIR=hadoop-hdfs-project/hadoop-hdfs-httpfs/downloads
+    mkdir -p $TOMCAT_DOWNLOAD_DIR
+    cp --no-preserve=mode,ownership ${tomcatSrc} $TOMCAT_DOWNLOAD_DIR/apache-tomcat-6.0.44.tar.gz
   '';
 
   postInstall = ''
