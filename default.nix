@@ -1,4 +1,5 @@
 { pkgs ? import <nixpkgs> {}
+, lumosTracingFramework
 }:
 
 let
@@ -23,12 +24,6 @@ let
     sha256 = "sha256-qreSMi51xlAmdRIJM8vFGc+1msjRkvT6EDNxozVwgiQ=";
   };
 
-  lumosTracingFramework = callPackage (fetchFromGitHub {
-    owner = "leochanj105";
-    repo = "tracing-framework";
-    rev = "50c5f262982aa75823f15315161b10e67b74b4d9";
-    hash = "sha256-8ZguP3ntzEaomNqOzbNI3CZ0eEsfr2U5m9YEbw5i/3U=";
-  }) { };
 in
 
 maven.buildMavenPackage rec {
@@ -59,7 +54,7 @@ maven.buildMavenPackage rec {
   HADOOP_PROTOC_PATH = lib.getExe'
     cherrypiejamNurPackages.protobuf_2_5_0 "protoc";
 
-  LUMOS_TRACING_FRAMEWORK_PATH = lumosTracingFramework;
+  LUMOS_TRACING_FRAMEWORK_PATH = "${lumosTracingFramework}/dist";
 
   mvnJdk = jdk8;
 
@@ -86,6 +81,6 @@ maven.buildMavenPackage rec {
   '';
 
   postInstall = ''
-    mv hadoop-dist $out
+    cp -r . $out
   '';
 }
