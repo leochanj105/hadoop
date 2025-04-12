@@ -46,7 +46,7 @@ maven.buildMavenPackage rec {
   ++ (if withTests
     # -DskipTests compiles tests without running them.
    then [ "-DskipTests=true" ]
-   else [ "-Dmaven.test.skip=true"  ]
+   else [ "-Dmaven.test.skip=true" ]
   ));
 
   nativeBuildInputs = [
