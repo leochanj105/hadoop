@@ -1,4 +1,5 @@
 { pkgs ? import <nixpkgs> {}
+, withTests ? false
 , lumosTracingFramework
 }:
 
@@ -34,15 +35,19 @@ maven.buildMavenPackage rec {
 
   mvnHash = "sha256-G8dk0iu4RzclJGM5vy8lcp42xoINK9m/Gfxfb2wNDlA=";
 
-  mvnParameters = lib.escapeShellArgs [
+  mvnParameters = lib.escapeShellArgs ([
     "clean"
     "install"
     "-U"
     "package"
     "-Pdist"
     "-Dmaven.javadoc.skip=true"
-    "-Dmaven.test.skip=true"
-  ];
+  ]
+  ++ (if withTests
+    # -DskipTests compiles tests without running them.
+   then [ "-DskipTests=true" ]
+   else [ "-Dmaven.test.skip=true"  ]
+  ));
 
   nativeBuildInputs = [
     cherrypiejamNurPackages.protobuf_2_5_0
