@@ -42,6 +42,13 @@ maven.buildMavenPackage rec {
     "package"
     "-Pdist"
     "-Dmaven.javadoc.skip=true"
+    ## This supports building a subset of the project. Since unwanted
+    ## subprojects are already commented out in configuration, we just
+    ## need to build the whole project.
+    # "-pl"
+    # "hadoop-hdfs-project,hadoop-common-project,hadoop-dist"
+    # "-am"
+    # "-amd"
   ]
   ++ (if withTests
     # -DskipTests compiles tests without running them.
