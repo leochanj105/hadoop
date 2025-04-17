@@ -11,6 +11,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 
 public class SmallBench{
   public static void main(String args[]){
+    System.out.println("AHA");
     try {
       ClientProtocol nn = NameNodeProxies.createProxy(new HdfsConfiguration(), new URI("hdfs://localhost:9000"), ClientProtocol.class).getProxy();
       long start, end;
