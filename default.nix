@@ -33,7 +33,7 @@ maven.buildMavenPackage rec {
 
   src = ./.;
 
-  mvnHash = "sha256-G8dk0iu4RzclJGM5vy8lcp42xoINK9m/Gfxfb2wNDlA=";
+  mvnHash = "sha256-xFSGHI4Qkuyr69xN9LC406AsF24hyu6/qvwgnD3KBd4=";
 
   mvnParameters = lib.escapeShellArgs ([
     "clean"

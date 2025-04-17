@@ -133,11 +133,11 @@ public class LumosNNThroughputBenchmark implements Tool {
   static void setNameNodeLoggingLevel(Level logLevel) {
     LOG.fatal("Log level = " + logLevel.toString());
     // change log level to NameNode logs
-    DFSTestUtil.setNameNodeLogLevel(logLevel);
-    GenericTestUtils.setLogLevel(LogManager.getLogger(
-            NetworkTopology.class.getName()), logLevel);
-    GenericTestUtils.setLogLevel(LogManager.getLogger(
-            Groups.class.getName()), logLevel);
+    // DFSTestUtil.setNameNodeLogLevel(logLevel);
+    // GenericTestUtils.setLogLevel(LogManager.getLogger(
+    //         NetworkTopology.class.getName()), logLevel);
+    // GenericTestUtils.setLogLevel(LogManager.getLogger(
+    //         Groups.class.getName()), logLevel);
   }
 
   /**
@@ -1473,6 +1473,7 @@ public class LumosNNThroughputBenchmark implements Tool {
     LumosNNThroughputBenchmark bench = null;
     try {
       bench = new LumosNNThroughputBenchmark(new HdfsConfiguration());
+      //bench.run(null);
       ToolRunner.run(bench, args);
     } finally {
       if(bench != null)
@@ -1482,12 +1483,11 @@ public class LumosNNThroughputBenchmark implements Tool {
 
   @Override
   public void setConf(Configuration conf) {
-    throw new UnsupportedOperationException("Unimplemented method 'setConf'");
   }
 
   @Override
   public Configuration getConf() {
-    throw new UnsupportedOperationException("Unimplemented method 'getConf'");
+    return null;
   }
 
 }
