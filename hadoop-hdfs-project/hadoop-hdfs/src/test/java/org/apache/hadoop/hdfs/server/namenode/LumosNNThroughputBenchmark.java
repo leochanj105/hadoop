@@ -32,6 +32,7 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.crypto.CryptoProtocolVersion;
 import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
@@ -113,7 +114,7 @@ import org.apache.log4j.LogManager;
  */
 public class LumosNNThroughputBenchmark implements Tool {
   private static final Log LOG = LogFactory.getLog(LumosNNThroughputBenchmark.class);
-  private static final int BLOCK_SIZE = 16;
+  private static final int BLOCK_SIZE = (int) DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_DEFAULT;
   private static final String GENERAL_OPTIONS_USAGE = 
     "     [-keepResults] | [-logLevel L] | [-UGCacheRefreshCount G]";
 
@@ -573,7 +574,7 @@ public class LumosNNThroughputBenchmark implements Tool {
       nameNode.create(fileNames[daemonId][inputIdx], FsPermission.getDefault(),
                       clientName, new EnumSetWritable<CreateFlag>(EnumSet
               .of(CreateFlag.CREATE, CreateFlag.OVERWRITE)), true, 
-          replication, BLOCK_SIZE, null);
+          replication, BLOCK_SIZE, new CryptoProtocolVersion[0]);
       long end = Time.now();
       for(boolean written = !closeUponCreate; !written; 
         written = nameNode.complete(fileNames[daemonId][inputIdx],
