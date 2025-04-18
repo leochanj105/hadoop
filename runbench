@@ -1,0 +1,3 @@
+export HADOOP_CLASSPATH=$HADOOP_CLASSPATH:/home/jingyuan/hadoop/hadoop-hdfs-project/hadoop-hdfs/target/test-classes
+export HADOOP_DIST_ADDR=/home/jingyuan/hadoop/hadoop-dist/target/hadoop-2.7.2
+$HADOOP_DIST_ADDR/bin/hadoop org.apache.hadoop.hdfs.server.namenode.LumosNNThroughputBenchmark $@
