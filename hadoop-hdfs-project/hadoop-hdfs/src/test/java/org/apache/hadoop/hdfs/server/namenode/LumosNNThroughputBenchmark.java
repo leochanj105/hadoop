@@ -832,7 +832,7 @@ public class LumosNNThroughputBenchmark implements Tool {
       } else {
         enumSet = new EnumSetWritable<>(EnumSet.of(CreateFlag.APPEND));
       }
-      nameNode.append(src, "TestClient", enumSet);
+      nameNode.append(src, getClientName(daemonId), enumSet);
       long end = Time.now();
       return end - start;
     }
@@ -1489,18 +1489,18 @@ public class LumosNNThroughputBenchmark implements Tool {
         opStat = new RenameFileStats(args);
         ops.add(opStat);
       }
-      if(runAll || BlockReportStats.OP_BLOCK_REPORT_NAME.equals(type)) {
-        opStat = new BlockReportStats(args);
-        ops.add(opStat);
-      }
-      if(runAll || ReplicationStats.OP_REPLICATION_NAME.equals(type)) {
-        opStat = new ReplicationStats(args);
-        ops.add(opStat);
-      }
-      if(runAll || CleanAllStats.OP_CLEAN_NAME.equals(type)) {
-        opStat = new CleanAllStats(args);
-        ops.add(opStat);
-      }
+      // if(runAll || BlockReportStats.OP_BLOCK_REPORT_NAME.equals(type)) {
+      //   opStat = new BlockReportStats(args);
+      //   ops.add(opStat);
+      // }
+      // if(runAll || ReplicationStats.OP_REPLICATION_NAME.equals(type)) {
+      //   opStat = new ReplicationStats(args);
+      //   ops.add(opStat);
+      // }
+      // if(runAll || CleanAllStats.OP_CLEAN_NAME.equals(type)) {
+      //   opStat = new CleanAllStats(args);
+      //   ops.add(opStat);
+      // }
       if(ops.size() == 0)
         printUsage();
       // run each benchmark
