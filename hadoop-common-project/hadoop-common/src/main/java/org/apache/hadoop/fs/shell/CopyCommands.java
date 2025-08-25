@@ -21,6 +21,7 @@ package org.apache.hadoop.fs.shell;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Iterator;
@@ -46,6 +47,7 @@ class CopyCommands {
     factory.addClass(CopyFromLocal.class, "-copyFromLocal");
     factory.addClass(CopyToLocal.class, "-copyToLocal");
     factory.addClass(Get.class, "-get");
+    factory.addClass(ReadBench.class, "-readBench");
     factory.addClass(Put.class, "-put");
     factory.addClass(AppendToFile.class, "-appendToFile");
   }
@@ -278,6 +280,106 @@ class CopyCommands {
     public static final String NAME = "copyToLocal";
     public static final String USAGE = Get.USAGE;
     public static final String DESCRIPTION = "Identical to the -get command.";
+  }
+
+  public static class WriteBench extends Put{
+    public static final String NAME = "writeBench";
+    public static int FILE_SIZE = 8192;
+    public static int ITERATION = 10;
+    public static boolean DOIO = false;
+    public static final String USAGE = Get.USAGE;
+    public static final String DESCRIPTION = "Identical to the -put command.";
+    static{
+      String s = System.getenv("FILE_SIZE");
+      if (s != null) {
+        FILE_SIZE = Integer.valueOf(s);
+      }
+
+      s = System.getenv("ITERATION");
+      if (s != null) {
+        ITERATION = Integer.valueOf(s);
+      }
+
+      s = System.getenv("DOIO");
+      if (s != null) {
+        DOIO = s.equals("true");
+      }
+    }
+
+    @Override
+    public void processPath(PathData src, PathData dst) throws IOException {
+      System.out.println("benching...");
+      long start = System.nanoTime();
+      if (DOIO) {
+        for (int i = 0; i < ITERATION; i++) {
+          OutputStream out = dst.fs.append(dst.path);
+          IOUtils.copyBytes(new NullInputStream(), out, FILE_SIZE);
+        }
+      } else {
+        for (int i = 0; i < ITERATION; i++) {
+          src.fs.open(src.path);
+        }
+      }
+      long end = System.nanoTime();
+      System.out.println("WriteBench time: " + (end-start)/ITERATION);
+    }
+  }
+
+  public static class ReadBench extends Get {
+    public static final String NAME = "readBench";
+    public static int FILE_SIZE = 8192;
+    public static int ITERATION = 10;
+    public static boolean DOIO = false;
+    public static final String USAGE = Get.USAGE;
+    public static final String DESCRIPTION = "Identical to the -get command.";
+    static{
+      String s = System.getenv("FILE_SIZE");
+      if (s != null) {
+        FILE_SIZE = Integer.valueOf(s);
+      }
+
+      s = System.getenv("ITERATION");
+      if (s != null) {
+        ITERATION = Integer.valueOf(s);
+      }
+
+      s = System.getenv("DOIO");
+      if (s != null) {
+        DOIO = s.equals("true");
+      }
+    }
+
+    @Override
+    public void processPath(PathData src, PathData dst) throws IOException {
+      System.out.println("benching...");
+      long start = System.nanoTime();
+      if (DOIO) {
+        for (int i = 0; i < ITERATION; i++) {
+          InputStream in = src.fs.open(src.path);
+          IOUtils.copyBytes(in, new NullOutputStream(), FILE_SIZE);
+        }
+      } else {
+        for (int i = 0; i < ITERATION; i++) {
+          src.fs.open(src.path);
+        }
+      }
+      long end = System.nanoTime();
+      System.out.println("ReadBench time: " + (end-start)/ITERATION);
+    }
+  }
+
+  static class NullOutputStream extends OutputStream {
+    @Override
+    public void write(int x) throws IOException {
+      //System.out.println(x);
+    }
+  }
+
+  static class NullInputStream extends InputStream {
+    @Override
+    public int read() throws IOException {
+      return 0;
+    }
   }
 
   /**
