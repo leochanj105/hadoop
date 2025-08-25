@@ -308,6 +308,14 @@ class CopyCommands {
     }
 
     @Override
+    protected void processArguments(LinkedList<PathData> args)
+        throws IOException {
+      // this.overwrite = true;
+      setOverwrite(true);
+      super.processArguments(args);
+    }
+
+    @Override
     public void processPath(PathData src, PathData dst) throws IOException {
       System.out.println("benching...");
       long start = System.nanoTime();
