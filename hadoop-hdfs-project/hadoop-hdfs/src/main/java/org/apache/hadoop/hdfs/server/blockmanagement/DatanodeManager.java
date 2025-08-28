@@ -1428,8 +1428,13 @@ public class DatanodeManager {
 
         final List<DatanodeCommand> cmds = new ArrayList<DatanodeCommand>();
         //check pending replication
-        List<BlockTargetPair> pendingList = nodeinfo.getReplicationCommand(
-              maxTransfers, maxBytes);
+        List<BlockTargetPair> pendingList = null;
+        String s = System.getenv("CASE_STUDY");
+        if (s != null && s.equals("5465")) {
+          pendingList = nodeinfo.getReplicationCommand(maxTransfers);
+        } else {
+          pendingList = nodeinfo.getReplicationCommand(maxTransfers, maxBytes);
+        }
         if (pendingList != null) {
           cmds.add(new BlockCommand(DatanodeProtocol.DNA_TRANSFER, blockPoolId,
               pendingList));

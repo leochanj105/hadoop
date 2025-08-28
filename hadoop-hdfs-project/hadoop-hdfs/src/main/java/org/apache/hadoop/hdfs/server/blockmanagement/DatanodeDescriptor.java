@@ -114,14 +114,16 @@ public class DatanodeDescriptor extends DatanodeInfo {
     }
 
     /** Dequeue */
-    synchronized List<E> poll(int numBlocks) {
-      if (numBlocks <= 0 || blockq.isEmpty()) {
+    synchronized List<E> poll(int numTargets) {
+      if (numTargets <= 0 || blockq.isEmpty()) {
         return null;
       }
 
       List<E> results = new ArrayList<E>();
-      for(; !blockq.isEmpty() && numBlocks > 0; numBlocks--) {
-        results.add(blockq.poll());
+      for(; !blockq.isEmpty() && numTargets > 0;){ //numTargets--) {
+        numTargets -= ((BlockTargetPair)blockq.peek()).targets.length;
+        if(numTargets >=0)
+          results.add(blockq.poll());
       }
       return results;
     }

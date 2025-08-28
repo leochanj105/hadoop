@@ -255,6 +255,7 @@ public class DataNode extends ReconfigurableBase
     HdfsConfiguration.init();
   }
 
+  public static final String INJECT_DELAY = System.getenv("INJECT_DELAY");
   public static final String DN_CLIENTTRACE_FORMAT =
         "src: %s" +      // src IP
         ", dest: %s" +   // dst IP
@@ -294,7 +295,8 @@ public class DataNode extends ReconfigurableBase
   private String clusterId = null;
 
   public final static String EMPTY_DEL_HINT = "";
-  final AtomicInteger xmitsInProgress = new AtomicInteger();
+  // final AtomicInteger xmitsInProgress = new AtomicInteger();
+  int xmitsInProgress = 0;
   Daemon dataXceiverServer = null;
   DataXceiverServer xserver = null;
   Daemon localDataXceiverServer = null;
@@ -1855,7 +1857,15 @@ public class DataNode extends ReconfigurableBase
   }
   
   int getXmitsInProgress() {
-    return xmitsInProgress.get();
+
+    String CASE = System.getenv("CASE_STUDY");
+
+    if (CASE != null && CASE.equals("5465_HC")) {
+      return 1;
+    }
+    else{
+    return xmitsInProgress;//xmitsInProgress.get();
+                           }
   }
 
   private void reportBadBlock(final BPOfferService bpos,
@@ -2080,7 +2090,21 @@ public class DataNode extends ReconfigurableBase
       // HDFSBackgroundTask.REPLICATION.start();
       final long begin = System.nanoTime();
       
-      xmitsInProgress.getAndIncrement();
+      //xmitsInProgress.getAndIncrement();
+      int xtmp = xmitsInProgress;
+      xtmp++;
+      String CASE = System.getenv("CASE_STUDY");
+      if (CASE != null && CASE.equals("5465")) {
+        if (INJECT_DELAY != null) {
+          try {
+            Thread.sleep(Integer.valueOf(INJECT_DELAY));
+          } catch (InterruptedException e) {
+          }
+        } else {
+          // xtmp = 1;
+        }
+      }
+      xmitsInProgress = xtmp;
       Socket sock = null;
       DataOutputStream out = null;
       DataInputStream in = null;
@@ -2160,7 +2184,20 @@ public class DataNode extends ReconfigurableBase
         // check if there are any disk problem
         checkDiskErrorAsync();
       } finally {
-        xmitsInProgress.getAndDecrement();
+        xtmp = xmitsInProgress;
+        xtmp--;
+        CASE = System.getenv("CASE_STUDY");
+        if (CASE != null && CASE.equals("5465")) {
+          if (INJECT_DELAY != null) {
+            try {
+              Thread.sleep(Integer.valueOf(INJECT_DELAY));
+            } catch (InterruptedException e) {
+            }
+          } else {
+            // xtmp = 1;
+          }
+        }
+        xmitsInProgress=xtmp;
         IOUtils.closeStream(blockSender);
         IOUtils.closeStream(out);
         IOUtils.closeStream(in);
@@ -2413,7 +2450,7 @@ public class DataNode extends ReconfigurableBase
   public String toString() {
     return "DataNode{data=" + data + ", localName='" + getDisplayName()
         + "', datanodeUuid='" + storage.getDatanodeUuid() + "', xmitsInProgress="
-        + xmitsInProgress.get() + "}";
+        + xmitsInProgress + "}";
   }
 
   private static void printUsage(PrintStream out) {

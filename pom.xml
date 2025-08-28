@@ -112,6 +112,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
       <version>${tracingplane.version}</version>
       <scope>system</scope>
       <systemPath>/${env.LUMOS_TRACING_FRAMEWORK_PATH}/target/pivottracing-aspects-${tracingplane.version}.jar</systemPath>
+      <!-- <systemPath>/home/jingyuan/tracing-framework/dist/target/pivottracing-aspects-${tracingplane.version}.jar</systemPath> -->
     </dependency>
     <!-- <dependency> -->
     <!--   <groupId>edu.brown.cs.systems</groupId> -->
